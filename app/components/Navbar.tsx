@@ -16,16 +16,13 @@ const Navbar = () => {
     <nav className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <h1 className="text-xl font-semibold text-blue-600">MyApp</h1>
+          <h1 className="text-xl font-semibold text-bg-primary">MyApp</h1>
           <div className="flex space-x-4">
             <Link href="/" className={linkClasses("/")}>
               Home
             </Link>
             <Link href="/about" className={linkClasses("/about")}>
               About
-            </Link>
-            <Link href="/contact" className={linkClasses("/contact")}>
-              Contact
             </Link>
           </div>
         </div>
