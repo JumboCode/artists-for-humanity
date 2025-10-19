@@ -1,33 +1,79 @@
 import Image from "next/image";
-import jcimg from "./imgs/jcimg.jpg";
+import meow from './imgs/meow.jpg';
+
+const artwork =[
+    {
+      name: "Alice Johnson",
+      title: "Sunset Dreams",
+      medium: "Adobe Illustrator",
+      year: 2023,
+      image: "app/imgs/meow.jpg",
+      
+    },
+    {
+      name: "Mark Lee",
+      title: "Urban Flow",
+      medium: "Photography",
+      year: 2022,
+      image: "/imgs/meow.jpg",
+    },
+    {
+      name: "Sophia Kim",
+      title: "Color Burst",
+      medium: "Watercolor",
+      year: 2023,
+      image: "/imgs/meow.jpg",
+    },
+    {
+      name: "Ethan Brown",
+      title: "Abstract Lines",
+      medium: "Adobe Photoshop",
+      year: 2021,
+      image: "/imgs/meow.jpg",
+    },
+    {
+      name: "Lily Chen",
+      title: "Nature's Path",
+      medium: "Oil Painting",
+      year: 2022,
+      image: "/imgs/meow.jpg",
+    },
+    {
+      name: "David Park",
+      title: "Geometric Dreams",
+      medium: "Sketching",
+      year: 2023,
+      image: "/imgs/meow.jpg",
+    },
+  ]
 
 export default function HomePage() {
   return (
-    <div className="section-padding" style={{ backgroundColor: "#000000ff" }}>
-      
-
+    
+    <div className="section-padding" style={{ backgroundColor: "#ffffffff" }}>
       {/* Intro Section*/}
-      <section className="flex flex-col w-[1392px] h-auto pt-[200px] pr-[500px] pl-[60px] gap-[20px] mx-auto max-w-full">
-        <h2 className="text-left text-white font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
+      <section className="flex flex-col w-[1392px] h-auto pt-[200px] pr-[500px] pl-[10px] gap-[10px] mx-auto max-w-full">
+        <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
           Showcasing the Next Generation of Creative Voices
         </h2>
 
-      <p className="text-left text-white font-secondary text-light  ">
-        Discover the artwork of AFH’s young artists — a living portfolio of design, expression, and innovation. 
-        Explore projects created for real clients and personal growth, and see how creativity shapes futures.
+      <p className="text-left text-black font-secondary text-light">
+        Explore the work of AFH’s young artists — a living showcase of design, creativity, and growth through real-world projects and personal expression.
       </p>
 
-      <div className="flex space-x-[10px]">
-        <button className="inline-flex items-center justify-center min-w-[161px] h-[41px] px-[15px] py-[10px] rounded-[50px] border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
+      <div className="flex space-x-[10px gap-[20px] mt-[20px] ">
+        <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
           Exhibition Name
         </button>
-        <button className="inline-flex items-center justify-center min-w-[161px] h-[41px] px-[15px] py-[10px] rounded-[50px] border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
+        <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
           Exhibition Name
         </button>
-        <button className="inline-flex items-center justify-center min-w-[161px] h-[41px] px-[15px] py-[10px] rounded-[50px] border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
+        <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
           Exhibition Name
         </button>
       </div>
+      
+      {/* Add img carousel here */}
         
       </section>
 
@@ -52,66 +98,40 @@ export default function HomePage() {
       </header>
       */}
 
-      <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-  {[
-    {
-      name: "Alice Johnson",
-      title: "Sunset Dreams",
-      medium: "Adobe Illustrator",
-      year: 2023,
-      image: "/images/art1.jpg",
-    },
-    {
-      name: "Mark Lee",
-      title: "Urban Flow",
-      medium: "Photography",
-      year: 2022,
-      image: "/imgs/jcimg.jpg",
-    },
-    {
-      name: "Sophia Kim",
-      title: "Color Burst",
-      medium: "Watercolor",
-      year: 2023,
-      image: "/images/art3.jpg",
-    },
-    {
-      name: "Ethan Brown",
-      title: "Abstract Lines",
-      medium: "Adobe Photoshop",
-      year: 2021,
-      image: "/images/art4.jpg",
-    },
-    {
-      name: "Lily Chen",
-      title: "Nature's Path",
-      medium: "Oil Painting",
-      year: 2022,
-      image: "/images/art5.jpg",
-    },
-    {
-      name: "David Park",
-      title: "Geometric Dreams",
-      medium: "Sketching",
-      year: 2023,
-      image: "/images/art6.jpg",
-    },
-  ].map((art, index) => (
-    <div key={index} className="card card-hover animate-slide-up bg-[#1E1E1E] rounded-lg overflow-hidden">
-      <div className="aspect-square overflow-hidden">
+      
+{/* Section line */}
+<hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
+
+{/* Artwork gallery */}
+<div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-20">
+  {artwork.map((art, index) => (
+    <div key={index} className=" bg-white shadow-none">
+        {/* Image Section */}
+      <div className="w-full  image-hover animate-slide-up rounded-t-lg bg-blue-500 flex items-center justify-center">
         <img
-          src={art.image} 
+          // src={art.image}
+          src = "/imgs/meow.jpg"
           alt={art.title}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105"
         />
       </div>
-      <div className="p-6">
-        <p className="text-afh-white font-medium mb-1">{art.name}</p>
-        <p className="text-sm text-afh-white mb-1">{art.title} • {art.medium} • {art.year}</p>
+
+      <div className="p-2">
+        <p className="text-black text-m font-medium">{art.name}</p>
+        <p className="text-m font-body font-light text-black mb-1">{art.title} • {art.medium} • {art.year}</p>
       </div>
     </div>
   ))}
 </div>
+  
+  <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
+
+  <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
+          Do you also want to showcase your art on our homepage? Upload your work below.
+        </h2>
+        <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer my-8">
+          Upload Your Work
+        </button>
 
 
 

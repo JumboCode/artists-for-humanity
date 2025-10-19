@@ -3,7 +3,7 @@ import { Poppins } from 'next/font/google'
 
 const poppins = Poppins({ 
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['300', '500', '600', '700'],
   variable: '--font-poppins',
   display: 'swap',
 })
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <body className={poppins.className} >
-        <div className="min-h-screen bg-black"> {/* Defaulting black bg */}
+        <div className="min-h-screen bg-white"> {/* Defaulting black bg */}
           <main className="container-afh">
             {children}
           </main>
