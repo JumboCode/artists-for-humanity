@@ -21,8 +21,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={poppins.variable}>
-      <body className={poppins.className}>
-        <div className="min-h-screen bg-afh-white">
+      <body className={poppins.className} >
+        <div className="min-h-screen bg-black"> {/* Defaulting black bg */}
           <main className="container-afh">
             {children}
           </main>
