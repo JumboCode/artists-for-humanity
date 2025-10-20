@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react"; 
 
@@ -21,7 +22,13 @@ const Navbar = () => {
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <Link href="/" className="text-xl font-semibold text-gray-700">
-            AFH
+            <Image
+            src="/logo.png"
+            alt="AFH Logo"
+            width={160}
+            height={160}
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain"
+            />
           </Link>
 
           {/* Desktop Links */}
