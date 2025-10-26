@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '../../../lib/prisma'
+import { prisma } from '@/lib/prisma' 
 
 
 export async function GET(
@@ -17,7 +17,8 @@ export async function GET(
   //   include: { author: { include: { profile: true } } },
   //   orderBy: { created_at: 'desc' }
   // });
-  return NextResponse.json({}, { status: 501 });
+  
+  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
 }
 
 export async function POST(
@@ -32,7 +33,7 @@ export async function POST(
   // 4. Create the new artwork with status 'PENDING'.
   // 5. Note: Cloudinary widget URL will be in req.body.
   
-  return NextResponse.json({}, { status: 501 });
+  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
 }
 
 

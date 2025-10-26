@@ -1,29 +1,13 @@
-// app/api/admin/artworks/[id]/route.ts
-// 
-// THIS IS THE NEW 'app' ROUTER SYNTAX
-//
 import { NextResponse } from 'next/server'
-import { prisma } from '../../../../../lib/prisma'
-
-// This function will now handle your GET /api/admin/artworks/1 request
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  // Your print statement will now work!
-
-  const { id } = await params
-  console.log('HIT THE GET ENDPOINT. ID:', id);
-
-  // TASK FOR DEV:
-  // 1. Get user ID from session (MUST be admin).
-  // 2. Find the artwork by its ID.
+import { prisma } from '@/lib/prisma' 
 
 
-  return NextResponse.json({});
-}
 
-// This handles the PATCH /api/admin/artworks/:id endpoint
+/** 
+ * An endpoint for editing a piece of artwork. To be done by the admin only
+ * 
+ */
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -34,14 +18,10 @@ export async function PATCH(
   // const adminId = "GET_FROM_SESSION_MIDDLEWARE";
 
   // TASK FOR DEV:
-  // 1. This is the "super edit" for admins.
-  // 2. Get editable fields from req.body (e.g., title, description, featured).
-  // const body = await req.json();
-  // 3. Update the artwork.
-  // 4. Log this action in AdminAction (e.g., 'ARTWORK_EDITED', 'ARTWORK_FEATURED')
+  // 1. Get user ID from session
+  // 2. Find the artwork by its ID
+  // 3. Make sure this is a currently logged in admin; if not, reject the request; forbidden
+  // 4. Otherwise, let the admin edit this piece of artwork
 
   return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
 }
-
-// You can add other methods (POST, DELETE) here as needed
-// export async function DELETE(...) {}
