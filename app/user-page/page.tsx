@@ -68,8 +68,8 @@ export default function UserPage() {
         />
       </div>
 
-      <div className="h-full w-full flex flex gap-[50px]">
-        <div className="afh-section user-info -translate-y-[30px] w-[30%] flex flex-col gap-[40px]">
+      <div className="h-full w-full flex max-md:flex-col gap-[50px]">
+        <div className="afh-section user-info -translate-y-[30px] w-[30%] md:w-[45%] max-md:w-full max-md:items-center xs: items-center flex flex-col gap-[40px]">
           
           {/* Profile image and name */}
           <div className="flex flex-col">
@@ -112,18 +112,18 @@ export default function UserPage() {
           </div>
 
           <div> 
-            <button className="text-[20px] btn-outline rounded-full font-primary font-light inline-flex justify-start">Upload a New Project</button>
+            <button className="text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start">Upload a New Project</button>
           </div> 
         </div>
 
         {/* Galery Section */}
-        <div className = "afh-section galery-section w-[70%] -translate-y-[30px] section-padding flex flex-col gap-[40px]">
+        <div className = "afh-section galery-section w-[70%] md:w-[55%] max-md:w-full max-md:items-center -translate-y-[30px] section-padding flex flex-col gap-[40px]">
             <div className= "flex gap-[25px] w-full border-b-2 h-auto">
               <button className = {`relative h-full border-b-2 bottom-[-2px] ${onPublished ? "border-black" : "border-transparent"}`} onClick = {() => setTab(true)}> Published </button>
               <button className = {`relative h-full border-b-2 bottom-[-2px] ${onPublished ? "border-transparent" : "border-black"}`} onClick = {() => setTab(false)}> Drafts </button>
             </div>
             {onPublished && (
-              <div className=" gallery-grid gap-[60px] grid-cols-2 font-primary text-[10px]">
+              <div className=" gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
                   {publicArtwork.map((art, index) => (
                       <div key ={index} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
@@ -137,7 +137,7 @@ export default function UserPage() {
               </div>
             )}
             { !onPublished && (
-              <div className=" gallery-grid gap-[60px] grid-cols-2 font-primary text-[10px]">
+              <div className=" gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
                   {privateArtwork.map((art, index) => (
                       <div key ={index} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
