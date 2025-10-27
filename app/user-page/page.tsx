@@ -100,7 +100,7 @@ export default function UserPage() {
                   <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18.9933 13.6822V7.16552L10.8115 11.7933L0.811523 6.12663L10.8115 0.459961L20.8115 6.12663V13.6822H18.9933ZM10.8115 17.46L4.44789 13.8711V9.14885L10.8115 12.7377L17.1752 9.14885V13.8711L10.8115 17.46Z" stroke="#313E48" strokeWidth="0.8"/>
                   </svg>
-                  <p>{profile1.year}@{profile1.school}</p>
+                  <p>{profile1.year} @ {profile1.school}</p>
               </div> 
               {/* instagram */}
               <div className = "flex items-center gap-2.5"> 
@@ -123,7 +123,7 @@ export default function UserPage() {
               <button className = {`relative h-full border-b-2 bottom-[-2px] ${onPublished ? "border-transparent" : "border-black"}`} onClick = {() => setTab(false)}> Drafts </button>
             </div>
             {onPublished && (
-              <div className=" gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
+              <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
                   {publicArtwork.map((art, index) => (
                       <div key ={index} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
