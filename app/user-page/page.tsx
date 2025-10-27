@@ -111,8 +111,9 @@ export default function UserPage() {
               </div> 
           </div>
 
-          <div> 
-            <button className="text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start"> Edit Your Profile </button>
+          <div className = "flex flex-col gap-[20px] max-md:items-center"> 
+            <button className="border-[1px] max-w-[169px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start"> Edit Profile Info </button> 
+            <button className="border-[1px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start">Upload a New Project</button>
           </div> 
         </div>
 
