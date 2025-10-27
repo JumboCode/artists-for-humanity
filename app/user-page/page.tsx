@@ -57,7 +57,7 @@ const privateArtwork =
 export default function UserPage() {
   const [onPublished, setTab] = useState(true);
   return (
-    <div className="bg-afh-white min-w-screen container-afh">
+    <div className="bg-afh-white min-w-screen container-afh text-black">
       {/* 🔸 FULL-WIDTH HERO IMAGE */}
       <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
         <Image
