@@ -54,14 +54,16 @@ export const LoginBody = () => {
           again.
         </label>
       )}
-      <LoginButton />
+      <div className="flex justify-end">
+        <LoginButton />
+      </div>
     </div>
   )
 }
 
 const SignUpSection = () => {
   return (
-    <p className="font-secondary font-light font-lg">
+    <p className="font-secondary font-light font-lg text-black">
       Don't have an account yet? Sign up{' '}
       <Link href={'/sign-up'}>
         <span className="underline font-semibold text-black">here</span>
