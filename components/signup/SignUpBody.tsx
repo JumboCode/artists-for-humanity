@@ -1,22 +1,29 @@
 'use client'
-import Link from 'next/link'
-import { FormField } from '../common/FormField'
 import { ChangeEvent, useState } from 'react'
-import { LoginButton } from './LoginButton'
+import { FormField } from '../common/FormField'
 import { PasswordTextField } from '../common/PasswordFormField'
+import { LoginButton } from '../login/LoginButton'
 
-type LoginFormData = {
-  username: string
+type SignUpFormData = {
+  firstName: string
+  lastName: string
+  school: string
+  gradYear: number | ''
+  email: string
   password: string
 }
 
-const emptyLoginFormData: LoginFormData = {
-  username: '',
+const emptySignUpFormData: SignUpFormData = {
+  firstName: '',
+  lastName: '',
+  school: '',
+  gradYear: '',
+  email: '',
   password: '',
 }
 
-export const LoginBody = () => {
-  const [formData, setFormData] = useState(emptyLoginFormData)
+export const SignUpBody = () => {
+  const [formData, setFormData] = useState(emptySignUpFormData)
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({})
   const [showFormError, setShowFormError] = useState(false)
 
@@ -39,14 +46,46 @@ export const LoginBody = () => {
       <h1 className="font-light font-xl font-heading">Student Portal Login</h1>
       <hr className="border color-black" />
       <div className="flex flex-col gap-[60px]">
-        <SignUpSection />
         <FormField
-          label="Username"
-          value={formData.username}
-          name="userName"
+          label="First Name"
+          value={formData.firstName}
+          name="firstName"
+          errorMessage="Please enter your first name"
+          onChange={handleChange}
+          showError={errors.firstName}
+        />
+        <FormField
+          label="Last Name"
+          value={formData.lastName}
+          name="lastName"
+          errorMessage="Please enter your last name"
+          onChange={handleChange}
+          showError={errors.lastName}
+        />
+        <FormField
+          label="School Name"
+          value={formData.school}
+          name="school"
+          errorMessage="Please enter your school name"
+          onChange={handleChange}
+          showError={errors.school}
+        />
+        <FormField
+          label="Graduation Year"
+          type="number"
+          value={formData.gradYear}
+          name="gradYear"
+          errorMessage="Please enter your Graduation Year"
+          onChange={handleChange}
+          showError={errors.gradYear}
+        />
+        <FormField
+          label="Email"
+          value={formData.email}
+          name="email"
           errorMessage="Please enter your username or email address"
           onChange={handleChange}
-          showError={errors.username}
+          showError={errors.email}
         />
         <PasswordTextField
           label="Password"
@@ -57,6 +96,7 @@ export const LoginBody = () => {
           showError={errors.password}
         />
       </div>
+
       {showFormError && (
         <label className="text-afh-orange font-secondary font-extralight">
           The email address or password you entered is incorrect. Please try
@@ -67,17 +107,5 @@ export const LoginBody = () => {
         <LoginButton />
       </div>
     </div>
-  )
-}
-
-const SignUpSection = () => {
-  return (
-    <p className="font-secondary font-light font-lg text-black">
-      Don't have an account yet? Sign up{' '}
-      <Link href={'/sign-up'}>
-        <span className="underline font-semibold text-black">here</span>
-      </Link>
-      .
-    </p>
   )
 }

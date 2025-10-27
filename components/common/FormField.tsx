@@ -1,29 +1,24 @@
-import { Input, InputAdornment, IconButton } from '@mui/material'
-import InfoIcon from '@mui/icons-material/Info'
-import { ChangeEventHandler } from 'react'
+import { Input, InputProps } from '@mui/material'
 import { FormFieldWrapper } from './FormFieldWrapper'
 
-interface UsernameTextFieldProps {
-  username: string
-  onFieldChange: ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement>
+export interface FormFieldProps extends InputProps {
+  label: string
+  errorMessage?: string
   showError: boolean
 }
 
-export const UsernameTextField = ({
-  username,
-  onFieldChange,
+export const FormField = ({
+  label,
+  errorMessage,
   showError,
-}: UsernameTextFieldProps) => {
+  ...rest
+}: FormFieldProps) => {
   return (
     <FormFieldWrapper
-      label="Username"
-      errorMessage={
-        showError ? 'Please enter your username or email address' : undefined
-      }
+      label={label}
+      errorMessage={showError ? errorMessage : undefined}
     >
       <Input
-        value={username}
-        onChange={onFieldChange}
         sx={{
           '&:before': {
             borderBottomColor: showError ? '#f97316' : 'rgba(0, 0, 0, 0.42)', // normal underline
@@ -38,11 +33,7 @@ export const UsernameTextField = ({
             borderBottomWidth: showError ? '2px' : '2px',
           },
         }}
-        endAdornment={
-          <InputAdornment position="end">
-            <IconButton edge="end" />
-          </InputAdornment>
-        }
+        {...rest}
       />
     </FormFieldWrapper>
   )
