@@ -27,7 +27,7 @@ const Navbar = () => {
             alt="AFH Logo"
             width={160}
             height={160}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain"
+            className="w-28 h-28 sm:w-30 sm:h-30 md:w-32 md:h-32 object-contain"
             />
           </Link>
 
