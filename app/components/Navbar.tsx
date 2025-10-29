@@ -24,17 +24,17 @@ const Navbar = () => {
     }`;
 
   return (
-    <nav className="bg-white shadow-md w-screen">
-      <div className="w-screen">
-        <div className="flex justify-between h-16 md:h-18 lg:h-20 items-center px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white shadow-md w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 md:h-18 lg:h-20 items-center">
           {/* Logo */}
-          <Link href="/" className="text-xl font-semibold text-gray-700">
+          <Link href="/" className="flex items-center justify-center">
             <Image
             src="/logo.png"
             alt="AFH Logo"
             width={160}
             height={160}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 object-contain"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 object-contain transition-transform duration-200 hover:scale-105"
             />
           </Link>
 
@@ -65,8 +65,8 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white w-screen">
-          <div className="px-4 sm:px-6 lg:px-8 pt-2 pb-3 space-y-1">
+        <div className="md:hidden border-t border-gray-200 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-3 space-y-1">
             <Link
               href="/user-portal"
               className={mobileLinkClasses("/user-portal")}
