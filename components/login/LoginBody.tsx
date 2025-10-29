@@ -29,8 +29,8 @@ export const LoginBody = () => {
 
   return (
     <div className="flex flex-col h-full w-full gap-[30px]">
-      <h1 className="font-light font-xl font-heading">Student Portal Login</h1>
-      <hr className="border color-black" />
+      <h1 className="font-light text-3xl font-heading text-afh-blue">Student Portal Login</h1>
+      <hr className="border border-gray-300" />
       <div className="flex flex-col gap-[60px]">
         <SignUpSection />
         <UsernameTextField
@@ -61,10 +61,10 @@ export const LoginBody = () => {
 
 const SignUpSection = () => {
   return (
-    <p className="font-secondary font-light font-lg">
+    <p className="font-secondary font-light text-lg text-gray-700">
       Don't have an account yet? Sign up{' '}
       <Link href={'/sign-up'}>
-        <span className="underline font-semibold text-black">here</span>
+        <span className="underline font-semibold text-afh-orange">here</span>
       </Link>
       .
     </p>
@@ -74,7 +74,7 @@ const SignUpSection = () => {
 const ForgotPassword = () => {
   return (
     <Link
-      className="underline text-black font-secondary font-light hover:text-black"
+      className="underline text-gray-600 font-secondary font-light hover:text-afh-orange transition-colors"
       href={'/sign-up'}
     >
       Forgot your password?
