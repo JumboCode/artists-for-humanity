@@ -10,16 +10,23 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const linkClasses = (path: string) =>
-    `block px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+    `block px-4 py-2 rounded-md text-sm md:text-base lg:text-lg font-medium transition-colors duration-200 ${
+      pathname === path
+        ? "underline text-gray-700 hover:text-gray-700"
+        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
+    }`;
+
+  const mobileLinkClasses = (path: string) =>
+    `block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200 ${
       pathname === path
         ? "underline text-gray-700 hover:text-gray-700"
         : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
     }`;
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
+    <nav className="bg-white shadow-md w-screen">
+      <div className="w-screen">
+        <div className="flex justify-between h-16 md:h-18 lg:h-20 items-center px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="text-xl font-semibold text-gray-700">
             <Image
@@ -27,12 +34,12 @@ const Navbar = () => {
             alt="AFH Logo"
             width={160}
             height={160}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 object-contain"
             />
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex space-x-4">
+          <div className="hidden md:flex space-x-4 lg:space-x-6 xl:space-x-8">
             <Link href="/user-portal" className={linkClasses("/user-portal")}>
               Gallery
             </Link>
@@ -50,7 +57,7 @@ const Navbar = () => {
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
         </div>
@@ -58,25 +65,25 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
-          <div className="px-2 pt-2 pb-3 space-y-1">
+        <div className="md:hidden border-t border-gray-200 bg-white w-screen">
+          <div className="px-4 sm:px-6 lg:px-8 pt-2 pb-3 space-y-1">
             <Link
               href="/user-portal"
-              className={linkClasses("/user-portal")}
+              className={mobileLinkClasses("/user-portal")}
               onClick={() => setIsOpen(false)}
             >
               Gallery
             </Link>
             <Link
               href="/upload"
-              className={linkClasses("/upload")}
+              className={mobileLinkClasses("/upload")}
               onClick={() => setIsOpen(false)}
             >
               Upload My Work
             </Link>
             <Link
               href="/login"
-              className={linkClasses("/login")}
+              className={mobileLinkClasses("/login")}
               onClick={() => setIsOpen(false)}
             >
               Login
