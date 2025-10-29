@@ -1,8 +1,12 @@
-export default function Login() {
+import { LoginBody } from '@/components/login/LoginBody'
+
+export default function LoginPage() {
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-4">About</h2>
-      <p>This is the login page</p>
+    <div
+      className="min-h-screen w-full flex justify-center items-start 
+                    p-4 md:pt-[200px] lg:pr-[500px] lg:pl-[60px] gap-8"
+    >
+      <LoginBody />
     </div>
-  );
+  )
 }
