@@ -36,8 +36,10 @@ export const LoginBody = () => {
 
   return (
     <div className="flex flex-col h-full w-full gap-[30px]">
-      <h1 className="font-light font-xl font-heading">Student Portal Login</h1>
-      <hr className="border color-black" />
+      <h1 className="font-light text-3xl font-heading text-afh-blue">
+        Student Portal Login
+      </h1>
+      <hr className="border border-gray-300" />
       <div className="flex flex-col gap-[60px]">
         <SignUpSection />
         <FormField
@@ -75,7 +77,7 @@ const SignUpSection = () => {
     <p className="font-secondary font-light font-lg text-black">
       Don't have an account yet? Sign up{' '}
       <Link href={'/sign-up'}>
-        <span className="underline font-semibold text-black">here</span>
+        <span className="underline font-semibold text-afh-orange">here</span>
       </Link>
       .
     </p>

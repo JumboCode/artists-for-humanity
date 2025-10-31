@@ -19,7 +19,7 @@ export const FormFieldWrapper = ({
         <label className="text-lg font-light text-black">{label}</label>
 
         {errorMessage && (
-          <div className="flex flex-row gap-1 items-center text-afh-orange text-sm font-extralight font-secondary">
+          <div className="flex flex-row gap-1 items-center text-afh-orange text-sm font-light font-secondary">
             <InfoIcon />
             {errorMessage}
           </div>
