@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { PasswordTextField } from './PasswordTextField'
 import { UsernameTextField } from './UsernameTextField'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import { LoginButton } from './LoginButton'
 
 export const LoginBody = () => {
@@ -29,7 +29,9 @@ export const LoginBody = () => {
 
   return (
     <div className="flex flex-col h-full w-full gap-[30px]">
-      <h1 className="font-light text-3xl font-heading text-afh-blue">Student Portal Login</h1>
+      <h1 className="font-light text-3xl font-heading text-afh-blue">
+        Student Portal Login
+      </h1>
       <hr className="border border-gray-300" />
       <div className="flex flex-col gap-[60px]">
         <SignUpSection />
