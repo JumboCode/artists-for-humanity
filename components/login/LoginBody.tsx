@@ -74,7 +74,7 @@ export const LoginBody = () => {
 
 const SignUpSection = () => {
   return (
-    <p className="font-secondary font-light font-lg text-black">
+    <p className="font-secondary font-light text-lg text-gray-700">
       Don't have an account yet? Sign up{' '}
       <Link href={'/sign-up'}>
         <span className="underline font-semibold text-afh-orange">here</span>

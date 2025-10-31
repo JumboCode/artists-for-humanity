@@ -32,7 +32,7 @@ export const PasswordTextField = (props: FormFieldProps) => {
 export const ForgotPassword = () => {
   return (
     <Link
-      className="underline text-black font-secondary font-light hover:text-black"
+      className="underline text-gray-600 font-secondary font-light hover:text-afh-orange transition-colors"
       href={'/'}
     >
       Forgot your password?

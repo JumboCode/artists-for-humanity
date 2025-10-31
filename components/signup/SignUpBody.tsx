@@ -2,7 +2,8 @@
 import { ChangeEvent, useState } from 'react'
 import { FormField } from '../common/FormField'
 import { PasswordTextField } from '../common/PasswordFormField'
-import { LoginButton } from '../login/LoginButton'
+import Link from 'next/link'
+import { SignUpButton } from './SignUpButton'
 
 type SignUpFormData = {
   firstName: string
@@ -43,9 +44,12 @@ export const SignUpBody = () => {
 
   return (
     <div className="flex flex-col h-full w-full gap-[30px]">
-      <h1 className="font-light font-xl font-heading">Student Portal Login</h1>
-      <hr className="border color-black" />
+      <h1 className="font-light text-3xl font-heading text-afh-blue">
+        Student Portal Sign Up
+      </h1>
+      <hr className="border border-gray-300" />
       <div className="flex flex-col gap-[60px]">
+        <LoginSection />
         <FormField
           label="First Name"
           value={formData.firstName}
@@ -104,8 +108,20 @@ export const SignUpBody = () => {
         </label>
       )}
       <div className="flex justify-end">
-        <LoginButton />
+        <SignUpButton />
       </div>
     </div>
+  )
+}
+
+const LoginSection = () => {
+  return (
+    <p className="font-light text-lg text-gray-700">
+      Already signed up? Login{' '}
+      <Link href={'/login'}>
+        <span className="underline font-semibold text-afh-orange">here</span>
+      </Link>
+      .
+    </p>
   )
 }
