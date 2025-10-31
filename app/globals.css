@@ -97,9 +97,14 @@
     @apply border-2 border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white font-medium px-6 py-3 rounded-lg transition-all duration-250;
   }
   
-  /* AFH Card Component */
+  /* AFH Card Component
   .card {
-    @apply bg-white rounded-xl shadow-afh border border-gray-100 overflow-hidden;
+    @apply bg-black rounded-xl shadow-afh border border-gray-100 overflow-hidden;
+  } */
+
+  /* Updated Card Component */
+  .card {
+    @apply bg-black rounded-xl shadow-afh overflow-hidden;
   }
   
   .card-hover {
