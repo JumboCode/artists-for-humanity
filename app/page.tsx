@@ -1,17 +1,16 @@
-import Image from "next/image";
-import meow from './imgs/meow.jpg';
 import React from 'react'
 
 const artwork =[
     {
+      id: 1,
       name: "Alice Johnson",
       title: "Sunset Dreams",
       medium: "Adobe Illustrator",
       year: 2023,
       image: "/imgs/meow.jpg",
-      
     },
     {
+      id: 2,
       name: "Mark Lee",
       title: "Urban Flow",
       medium: "Photography",
@@ -19,6 +18,7 @@ const artwork =[
       image: "/imgs/meow.jpg",
     },
     {
+      id: 3,
       name: "Sophia Kim",
       title: "Color Burst",
       medium: "Watercolor",
@@ -26,6 +26,7 @@ const artwork =[
       image: "/imgs/meow.jpg",
     },
     {
+      id: 4,
       name: "Ethan Brown",
       title: "Abstract Lines",
       medium: "Adobe Photoshop",
@@ -33,6 +34,7 @@ const artwork =[
       image: "/imgs/meow.jpg",
     },
     {
+      id: 5,
       name: "Lily Chen",
       title: "Nature's Path",
       medium: "Oil Painting",
@@ -40,6 +42,7 @@ const artwork =[
       image: "/imgs/meow.jpg",
     },
     {
+      id: 6,
       name: "David Park",
       title: "Geometric Dreams",
       medium: "Sketching",
@@ -81,9 +84,9 @@ export default function HomePage() {
   <div className="relative w-full overflow-hidden">
     {/* Carousel container */}
     <div className="flex space-x-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth px-2">
-      {artwork.map((art, index) => (
+      {artwork.map((art) => (
         <div
-          key={index}
+          key={art.id}
           className="min-w-[400px] sm:min-w-[500px] md:min-w-[500px] snap-center bg-white rounded-2xl flex-shrink-0"
         >
           <div className="w-full h-64 overflow-hidden rounded-t-2xl">
@@ -123,8 +126,8 @@ export default function HomePage() {
 <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
 {/* Artwork gallery */}
 <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-20">
-  {artwork.map((art, index) => (
-    <div key={index} className="bg-white shadow-none">
+  {artwork.map((art) => (
+    <div key={art.id} className="bg-white shadow-none">
       
       {/* Image Section */}
       <div className="w-full image-hover animate-slide-up flex items-center justify-center">
