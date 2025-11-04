@@ -1,6 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import meow from './imgs/meow.jpg';
 import React from 'react';
+import Carousel from "react-material-ui-carousel";
+import { Paper, Box, Typography } from "@mui/material";
 
 const artwork =[
     {
@@ -48,6 +52,84 @@ const artwork =[
     },
   ]
 
+  function ArtworkCarouselItem({ art }) {
+  // A simple placeholder for the image src for demonstration
+  // Replace meow with actual logic if images are hosted differently
+  const imageSource = art.image.includes("meow.jpg") ? meow.src : art.image;
+  
+  return (
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        mx: 2, // Horizontal margin for spacing between items (if not using nextjs-carousel's auto spacing)
+        borderRadius: '16px', 
+        overflow: 'hidden', 
+        backgroundColor: 'white',
+        cursor: 'pointer',
+      }}
+    >
+      {/* Image Section */}
+      <Box 
+        sx={{ 
+          width: '100%', 
+          height: { xs: 300, sm: 400, md: 500 }, // Responsive height
+          overflow: 'hidden', 
+        }}
+      >
+        {/* Using a regular <img> tag here for simplicity since the Image import is not directly used for the dynamic src */}
+        <img
+          src={imageSource}
+          alt={art.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transition: 'transform 0.1s',
+          }}
+          // You can add an onMouseEnter/onMouseLeave for the hover effect if you prefer an MUI approach
+        />
+      </Box>
+
+      {/* Artwork Info Section */}
+      <Box p={2}>
+        <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          flexWrap="wrap" 
+          gap={1}
+        >
+          {/* Left side: Artist + Title */}
+          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <Typography variant="body1" fontWeight="bold" color="text.primary">
+              {art.name}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              |
+            </Typography>
+            <Typography variant="body1" color="text.primary">
+              {art.title}
+            </Typography>
+          </Box>
+
+          {/* Right side: Medium + Year */}
+          <Box display="flex" alignItems="center" gap={1} flexShrink={0}>
+            <Typography variant="body2" color="text.secondary">
+              {art.medium}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              |
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {art.year}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
+
 export default function HomePage() {
   return (
     
@@ -58,118 +140,95 @@ export default function HomePage() {
           Showcasing the Next Generation of Creative Voices
         </h2>
 
-        <p className="text-left text-black font-secondary text-light">
+        <p className="text-left text-black font-text font-light sm:text-base md:text-lg mt-4 max-w-[800px]">
           Explore the work of AFH’s young artists — a living showcase of design, creativity, and growth through real-world projects and personal expression.
         </p>
-<div className="flex flex-wrap justify-start gap-3 sm:gap-4 mt-5">
-  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                     rounded-full border border-[#F26729] text-[#F26729] 
-                     font-secondary text-sm sm:text-base transition-colors duration-300 
-                     hover:bg-[#F26729] hover:text-white cursor-pointer">
-    Exhibition Name
-  </button>
+      <div className="flex flex-wrap justify-start gap-3 sm:gap-4 mt-5">
+        <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                          rounded-full border border-[#F26729] text-[#F26729] 
+                          font-secondary text-sm sm:text-base transition-colors duration-300 
+                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+          Exhibition Name
+        </button>
 
-  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                     rounded-full border border-[#F26729] text-[#F26729] 
-                     font-secondary text-sm sm:text-base transition-colors duration-300 
-                     hover:bg-[#F26729] hover:text-white cursor-pointer">
-    Exhibition Name
-  </button>
+        <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                          rounded-full border border-[#F26729] text-[#F26729] 
+                          font-secondary text-sm sm:text-base transition-colors duration-300 
+                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+          Exhibition Name
+        </button>
 
-  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                     rounded-full border border-[#F26729] text-[#F26729] 
-                     font-secondary text-sm sm:text-base transition-colors duration-300 
-                     hover:bg-[#F26729] hover:text-white cursor-pointer">
-    Exhibition Name
-  </button>
-</div>
+        <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                          rounded-full border border-[#F26729] text-[#F26729] 
+                          font-secondary text-sm sm:text-base transition-colors duration-300 
+                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+          Exhibition Name
+        </button>
+      </div>
       </section>
 
       {/* Carousel Section */}
-<section className="w-full mt-16">
-
-  <div className="relative w-full overflow-hidden">
-    {/* Carousel container */}
-    <div className="flex space-x-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth px-2">
-      {artwork.map((art, index) => (
-        <div
-          key={index}
-          className="min-w-[400px] sm:min-w-[500px] md:min-w-[500px] snap-center bg-white rounded-2xl flex-shrink-0"
-        >
-          <div className="w-full h-64 overflow-hidden rounded-t-2xl">
-            <img
-              src={art.image}
-              alt={art.title}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-            />
-          </div>
-          <div className="p-4">
-        <div className="flex items-center font-body font-light justify-between flex-wrap gap-x-2 text-base text-black">
-          {/* Left side: Artist + Title */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold">{art.name}</span>
-            <span className="text-gray-500 font-light">|</span>
-            <span className="text-gray-800">{art.title}</span>
-          </div>
-
-          {/* Right side: Medium + Year */}
-          <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-light">
-            <span>{art.medium}</span>
-            <span className="text-gray-500">|</span>
-            <span>{art.year}</span>
-          </div>
-        </div>
-      </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
+      <section className="sm:max-w-[500px] md:max-w-[700px] mt-16">
+      <Carousel
+        // Optional props for customization
+        autoPlay={true}
+        animation="slide"
+        indicators={true} // Show the dots at the bottom
+        cycleNavigation={true} // Loop the carousel
+        swipe={true}
+        // Custom styling for the main container (to center the carousel content)
+        sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 1, sm: 3 } }} 
+      >
+        {artwork.map((art, i) => (
+          // Use a key for React list rendering
+          <ArtworkCarouselItem key={i} art={art} /> 
+        ))}
+      </Carousel>
       </section>
 
 
       
-{/* Section line */}
-<hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
-{/* Artwork gallery */}
-<div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-20">
-  {artwork.map((art, index) => (
-    <div key={index} className="bg-white shadow-none">
-      
-      {/* Image Section */}
-      <div className="w-full image-hover animate-slide-up flex items-center justify-center">
-        <img
-          src={art.image}
-          alt={art.title}
-          className="w-full h-[300px] object-cover rounded-t-lg transition-transform duration-300 hover:scale-105"
-        />
-      </div>
+    {/* Section line */}
+    <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
+    {/* Artwork gallery */}
+    <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-20">
+      {artwork.map((art, index) => (
+        <div key={index} className="bg-white shadow-none">
+          
+          {/* Image Section */}
+          <div className="w-full image-hover animate-slide-up flex items-center justify-center">
+            <img
+              src={art.image}
+              alt={art.title}
+              className="w-full h-[300px] object-cover rounded-t-lg transition-transform duration-300 hover:scale-105"
+            />
+          </div>
 
-      {/* Artwork info */}
-      <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-base text-black mt-2">
-        {/* Left side: Artist + Title */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold">{art.name}</span>
-          <span className="text-gray-400 font-light">|</span>
-          <span className="text-gray-600">{art.title}</span>
-        </div>
+          {/* Artwork info */}
+          <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-base text-black mt-2">
+            {/* Left side: Artist + Title */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold">{art.name}</span>
+              <span className="text-gray-400 font-light">|</span>
+              <span className="text-gray-600">{art.title}</span>
+            </div>
 
-        {/* Right side: Medium + Year */}
-        <div className="flex items-center gap-2 flex-shrink-0 text-gray-500">
-          <span>{art.medium}</span>
-          <span className="text-gray-300">|</span>
-          <span>{art.year}</span>
+            {/* Right side: Medium + Year */}
+            <div className="flex items-center gap-2 flex-shrink-0 text-gray-500">
+              <span>{art.medium}</span>
+              <span className="text-gray-300">|</span>
+              <span>{art.year}</span>
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
-  ))}
-</div>
 
   
   <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
