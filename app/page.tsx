@@ -1,6 +1,6 @@
 import Image from "next/image";
 import meow from './imgs/meow.jpg';
-import React from 'react'
+import React from 'react';
 
 const artwork =[
     {
@@ -8,7 +8,7 @@ const artwork =[
       title: "Sunset Dreams",
       medium: "Adobe Illustrator",
       year: 2023,
-      image: "/imgs/meow.jpg",
+      image: "../imgs/meow.jpg",
       
     },
     {
@@ -44,7 +44,7 @@ const artwork =[
       title: "Geometric Dreams",
       medium: "Sketching",
       year: 2023,
-      image: "/imgs/meow.jpg",
+      image: "./imgs/meow.jpg", 
     },
   ]
 
@@ -61,18 +61,34 @@ export default function HomePage() {
         <p className="text-left text-black font-secondary text-light">
           Explore the work of AFH’s young artists — a living showcase of design, creativity, and growth through real-world projects and personal expression.
         </p>
+<div className="flex flex-wrap justify-start gap-3 sm:gap-4 mt-5">
+  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                     rounded-full border border-[#F26729] text-[#F26729] 
+                     font-secondary text-sm sm:text-base transition-colors duration-300 
+                     hover:bg-[#F26729] hover:text-white cursor-pointer">
+    Exhibition Name
+  </button>
 
-        <div className="flex space-x-[10px gap-[20px] mt-[20px] ">
-          <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
-            Exhibition Name
-          </button>
-          <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
-            Exhibition Name
-          </button>
-          <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
-            Exhibition Name
-          </button>
-        </div>
+  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                     rounded-full border border-[#F26729] text-[#F26729] 
+                     font-secondary text-sm sm:text-base transition-colors duration-300 
+                     hover:bg-[#F26729] hover:text-white cursor-pointer">
+    Exhibition Name
+  </button>
+
+  <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
+                     min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                     h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                     rounded-full border border-[#F26729] text-[#F26729] 
+                     font-secondary text-sm sm:text-base transition-colors duration-300 
+                     hover:bg-[#F26729] hover:text-white cursor-pointer">
+    Exhibition Name
+  </button>
+</div>
       </section>
 
       {/* Carousel Section */}
@@ -165,64 +181,6 @@ export default function HomePage() {
           Upload Your Work
         </button>
 
-
-
-      {/*
-      <section className="gallery-grid mb-16">
-
-        <div className="gallery-grid">
-          
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <div key={item} className="card card-hover animate-slide-up">
-              <div className="aspect-square overflow-hidden">
-              <img
-                  src={`lib/imgs/jcimg.jpg`} 
-                  alt={`Artwork ${item}`}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                />
-                <p className="text-afh-blue/60 font-medium">Artwork {item}</p>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-afh-white/70 mb-3">Name</p>
-                <p className="text-sm text-afh-white/60">Adobe Illustrator • Client Project</p>
-              </div>
-            </div>
-          ))}
-        </div>  
-      
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🎨</span>
-          </div>
-          <h3 className="mb-4">For Young Artists</h3>
-          <p className="text-afh-blue/70">
-            Build your professional portfolio while gaining real-world experience through 
-            paid creative projects and mentorship.
-          </p>
-        </div>
-        
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🤝</span>
-          </div>
-          <h3 className="mb-4">For Partners</h3>
-          <p className="text-afh-blue/70">
-            Connect with talented teen artists to bring your creative vision to life 
-            while supporting youth development in Boston.
-          </p>
-        </div> 
-        
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🌟</span>
-          </div>
-          <h3 className="mb-4">Community Impact</h3>
-          <p className="text-afh-blue/70">
-            Transcending economic, racial and social divisions to transform communities 
-            through the power of creative expression.
-          </p>
-        </div> 
-      </section> */}
     </div>
   )
 }
