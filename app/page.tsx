@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import React from 'react';
 import Carousel from "react-material-ui-carousel";
 import { Paper, Box, Typography } from "@mui/material";
@@ -47,7 +46,7 @@ const artwork =[
       title: "Geometric Dreams",
       medium: "Sketching",
       year: 2023,
-      image: "./imgs/meow.jpg", 
+      image: "/imgs/meow.jpg", 
     },
   ]
 
@@ -70,19 +69,20 @@ const artwork =[
       {/* Image Section */}
       <Box 
         sx={{ 
-          width: '100%', 
+          width: '100%',
           height: { xs: 300, sm: 400, md: 500 }, // Responsive height
           overflow: 'hidden', 
         }}
       >
         {/* Using a regular <img> tag here for simplicity since the Image import is not directly used for the dynamic src */}
         <img
-          src={imageSource}
+          src={art.image}
           alt={art.title}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            padding: '10px',
             transition: 'transform 0.1s',
           }}
           // You can add an onMouseEnter/onMouseLeave for the hover effect if you prefer an MUI approach
@@ -141,54 +141,56 @@ const artwork =[
 
 export default function HomePage() {
   return (
-    
     <div className="section-padding" style={{ backgroundColor: "#ffffffff" }}>
       {/* Intro Section*/}
-      <section className="flex flex-col w-[1392px] h-auto pt-[200px] pr-[500px] pl-[10px] gap-[20px] mx-auto max-w-full">
-        <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
+      <section className="justify-left flex flex-col w-[66%]  h-auto gap-[20px] max-w-full -ml-8">
+        <h2 className="text-left text-black font-heading font-light leading-snug text-4xl sm:text-3xl md:text-4xl">
           Showcasing the Next Generation of Creative Voices
         </h2>
 
-        <p className="text-left text-black font-text font-light sm:text-base md:text-lg mt-4 max-w-[800px]">
+        <p className="text-left text-black font-text font-light  mt-4 max-w-full">
           Explore the work of AFH’s young artists — a living showcase of design, creativity, and growth through real-world projects and personal expression.
         </p>
       <div className="flex flex-wrap justify-start gap-3 sm:gap-4 mt-5">
         <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                          rounded-full border border-[#F26729] text-[#F26729] 
-                          font-secondary text-sm sm:text-base transition-colors duration-300 
-                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+                    min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                    h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                    rounded-full border border-[#F26729] text-[#F26729] 
+                    font-secondary text-sm sm:text-base transition-colors duration-300 
+                    hover:bg-[#F26729] hover:text-white 
+                    active:bg-[#F26729] active:text-white cursor-pointer">
           Exhibition Name
         </button>
 
         <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                          rounded-full border border-[#F26729] text-[#F26729] 
-                          font-secondary text-sm sm:text-base transition-colors duration-300 
-                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+                    min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                    h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                    rounded-full border border-[#F26729] text-[#F26729] 
+                    font-secondary text-sm sm:text-base transition-colors duration-300 
+                    hover:bg-[#F26729] hover:text-white 
+                    active:bg-[#F26729] active:text-white cursor-pointer">
           Exhibition Name
         </button>
 
         <button className="flex-1 sm:flex-none inline-flex items-center justify-center 
-                          min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
-                          h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
-                          rounded-full border border-[#F26729] text-[#F26729] 
-                          font-secondary text-sm sm:text-base transition-colors duration-300 
-                          hover:bg-[#F26729] hover:text-white cursor-pointer">
+                    min-w-[100px] sm:min-w-[130px] md:min-w-[150px]
+                    h-[40px] sm:h-[45px] px-4 sm:px-6 py-2 sm:py-3 
+                    rounded-full border border-[#F26729] text-[#F26729] 
+                    font-secondary text-sm sm:text-base transition-colors duration-300 
+                    hover:bg-[#F26729] hover:text-white 
+                    active:bg-[#F26729] active:text-white cursor-pointer">
           Exhibition Name
         </button>
       </div>
       </section>
 
       {/* Carousel Section */}
-      <section className="w-[800px] mt-16">
+      <section className="w-[66%] h-auto gap-[20px] max-w-full -ml-8 mt-12">
       <Carousel
         // Optional props for customization
         autoPlay={true}
         animation="slide"
-        indicators={true} // Show the dots at the bottom
+        //indicators={true} // Show the dots at the bottom
         cycleNavigation={true} // Loop the carousel
         swipe={true}
         // Custom styling for the main container (to center the carousel content)
