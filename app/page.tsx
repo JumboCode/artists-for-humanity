@@ -8,26 +8,26 @@ import { Paper, Box, Typography } from "@mui/material";
 
 const artwork =[
     {
-      name: "Alice Johnson",
-      title: "Sunset Dreams",
-      medium: "Adobe Illustrator",
-      year: 2023,
-      image: "../imgs/meow.jpg",
+      name: "Ashley Lafortune",
+      title: "Title",
+      medium: "Digital Illustration",
+      year: 2022,
+      image: "/imgs/carousel1.png",
       
     },
     {
-      name: "Mark Lee",
-      title: "Urban Flow",
-      medium: "Photography",
+      name: "Griffin Lonergan",
+      title: "Title",
+      medium: "Medium",
       year: 2022,
-      image: "/imgs/meow.jpg",
+      image: "/imgs/carousel2.jpg",
     },
     {
-      name: "Sophia Kim",
-      title: "Color Burst",
-      medium: "Watercolor",
-      year: 2023,
-      image: "/imgs/meow.jpg",
+      name: "Syleah Forde",
+      title: "Title",
+      medium: "Medium",
+      year: 2022,
+      image: "/imgs/carousel3.jpg",
     },
     {
       name: "Ethan Brown",
@@ -55,14 +55,14 @@ const artwork =[
   function ArtworkCarouselItem({ art }) {
   // A simple placeholder for the image src for demonstration
   // Replace meow with actual logic if images are hosted differently
-  const imageSource = art.image.includes("meow.jpg") ? meow.src : art.image;
+  const imageSource = art.image;
   
   return (
     <Paper 
       elevation={0} 
       sx={{ 
         mx: 2, // Horizontal margin for spacing between items (if not using nextjs-carousel's auto spacing)
-        borderRadius: '16px', 
+        borderRadius: '10px', 
         overflow: 'hidden', 
         backgroundColor: 'white',
         cursor: 'pointer',
@@ -101,26 +101,36 @@ const artwork =[
         >
           {/* Left side: Artist + Title */}
           <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-            <Typography variant="body1" fontWeight="bold" color="text.primary">
+            {/* Mimics: <span className="font-semibold">{art.name}</span> */}
+            <Typography variant="body" fontWeight="600" color="text.primary"> 
               {art.name}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            
+            {/* Mimics: <span className="text-gray-400 font-light">|</span> */}
+            <Typography variant="body" fontWeight="300" sx={{ color: 'text.disabled' }}>
               |
             </Typography>
-            <Typography variant="body1" color="text.primary">
+            
+            {/* Mimics: <span className="text-gray-600">{art.title}</span> */}
+            <Typography variant="body" sx={{ color: 'text.secondary' }}> 
               {art.title}
             </Typography>
           </Box>
 
           {/* Right side: Medium + Year */}
-          <Box display="flex" alignItems="center" gap={1} flexShrink={0}>
-            <Typography variant="body2" color="text.secondary">
+          <Box display="flex" alignItems="center" gap={1} flexShrink={0} sx={{ color: 'text.secondary' }}>
+            {/* Mimics: <span>{art.medium}</span> */}
+            <Typography variant="body" component="span" color="inherit">
               {art.medium}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            
+            {/* Mimics: <span className="text-gray-300">|</span> */}
+            <Typography variant="body" component="span" sx={{ color: 'text.disabled' }}>
               |
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            
+            {/* Mimics: <span>{art.year}</span> */}
+            <Typography variant="body" component="span" color="inherit">
               {art.year}
             </Typography>
           </Box>
@@ -135,7 +145,7 @@ export default function HomePage() {
     
     <div className="section-padding" style={{ backgroundColor: "#ffffffff" }}>
       {/* Intro Section*/}
-      <section className="flex flex-col w-[1392px] h-auto pt-[200px] pr-[500px] pl-[10px] gap-[10px] mx-auto max-w-full">
+      <section className="flex flex-col w-[1392px] h-auto pt-[200px] pr-[500px] pl-[10px] gap-[20px] mx-auto max-w-full">
         <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
           Showcasing the Next Generation of Creative Voices
         </h2>
@@ -174,14 +184,14 @@ export default function HomePage() {
       </section>
 
       {/* Carousel Section */}
-      <section className="sm:max-w-[500px] md:max-w-[700px] mt-16">
+      <section className="w-[800px] mt-16">
       <Carousel
         // Optional props for customization
         autoPlay={true}
         animation="slide"
-        indicators={true} // Show the dots at the bottom
+        //indicators={true} // Show the dots at the bottom
         cycleNavigation={true} // Loop the carousel
-        swipe={true}
+        //swipe={true}
         // Custom styling for the main container (to center the carousel content)
         sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 1, sm: 3 } }} 
       >
