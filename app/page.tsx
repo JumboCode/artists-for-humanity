@@ -2,6 +2,8 @@
 
 import React from 'react';
 import Carousel from "react-material-ui-carousel";
+import Image from "next/image";
+import Masonry from '@mui/lab/Masonry';
 import { Paper, Box, Typography } from "@mui/material";
 
 const artwork =[
@@ -203,24 +205,29 @@ export default function HomePage() {
       </Carousel>
       </section>
 
-
       
     {/* Section line */}
     <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
+
     {/* Artwork gallery */}
-    <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-20">
+    <Masonry 
+      columns={{ xs: 1, sm: 2, lg: 3 }} 
+      spacing={3} 
+      sx={{ width: '100%', margin: '0 auto' }}
+    >
       {artwork.map((art, index) => (
         <div key={index} className="bg-white shadow-none">
-          
+
           {/* Image Section */}
           <div className="w-full image-hover animate-slide-up flex items-center justify-center">
-            <img
-              src={art.image}
-              alt={art.title}
-              className="w-full h-[300px] object-cover rounded-t-lg transition-transform duration-300 hover:scale-105"
-            />
+          <Image
+            src={art.image}
+            alt={art.title}
+            width={600}
+            height={800}
+            style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+          />
           </div>
-
           {/* Artwork info */}
           <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-base text-black mt-2">
             {/* Left side: Artist + Title */}
@@ -239,7 +246,7 @@ export default function HomePage() {
           </div>
         </div>
       ))}
-    </div>
+    </Masonry>
 
   
   <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
