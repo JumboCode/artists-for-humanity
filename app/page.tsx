@@ -52,7 +52,7 @@ const artwork =[
     },
   ]
 
-  function ArtworkCarouselItem({ art }) {
+  function ArtworkCarouselItem({ art}: {art: typeof artwork[0]}) {
   // A simple placeholder for the image src for demonstration
   // Replace meow with actual logic if images are hosted differently
   const imageSource = art.image;
@@ -78,7 +78,7 @@ const artwork =[
       >
         {/* Using a regular <img> tag here for simplicity since the Image import is not directly used for the dynamic src */}
         <img
-          src={imageSource}
+          src={art.image}
           alt={art.title}
           style={{
             width: '100%',
