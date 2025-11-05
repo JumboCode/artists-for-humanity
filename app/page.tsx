@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import meow from './imgs/meow.jpg';
 import React from 'react';
 import Carousel from "react-material-ui-carousel";
 import { Paper, Box, Typography } from "@mui/material";
@@ -78,7 +77,7 @@ const artwork =[
       >
         {/* Using a regular <img> tag here for simplicity since the Image import is not directly used for the dynamic src */}
         <img
-          src={art.image}
+          src={imageSource}
           alt={art.title}
           style={{
             width: '100%',
@@ -189,9 +188,9 @@ export default function HomePage() {
         // Optional props for customization
         autoPlay={true}
         animation="slide"
-        //indicators={true} // Show the dots at the bottom
+        indicators={true} // Show the dots at the bottom
         cycleNavigation={true} // Loop the carousel
-        //swipe={true}
+        swipe={true}
         // Custom styling for the main container (to center the carousel content)
         sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 1, sm: 3 } }} 
       >
