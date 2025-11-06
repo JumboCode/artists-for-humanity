@@ -4,7 +4,8 @@ import React from 'react';
 import Carousel from "react-material-ui-carousel";
 import Image from "next/image";
 import Masonry from '@mui/lab/Masonry';
-import { Paper, Box, Typography } from "@mui/material";
+import { Paper, Box, Typography, TextField } from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
 
 const artwork =[
     {
@@ -209,11 +210,25 @@ export default function HomePage() {
     {/* Section line */}
     <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
 
+    <Box sx={{ display: 'flex', alignItems: 'flex-end'}}>
+        <SearchIcon sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+        <TextField id="search" margin="normal" label="Search by name or work" slotProps={{
+    inputLabel: {
+      sx: {
+        fontFamily: "'Roboto', sans-serif",
+        fontSize: "20px",
+        fontWeight: 300,
+      },
+    },
+  }} 
+        variant="standard" />
+      </Box>
+
     {/* Artwork gallery */}
     <Masonry 
       columns={{ xs: 1, sm: 2, lg: 3 }} 
       spacing={3} 
-      sx={{ width: '100%', margin: '0 auto' }}
+      sx={{ width: '100%', margin: '20px' }}
     >
       {artwork.map((art, index) => (
         <div key={index} className="bg-white shadow-none">
