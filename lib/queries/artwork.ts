@@ -3,8 +3,6 @@
 import { neon } from '@neondatabase/serverless'
 import { Artwork } from './types'
 
-const sql = neon(process.env.DATABASE_URL as string)
-
 export async function getArtworkById(id: string): Promise<Artwork[]> {
   const sql = neon(process.env.DATABASE_URL as string)
   const resp = await sql`SELECT * FROM "Artwork" WHERE id = ${id}`
@@ -31,3 +29,7 @@ export async function getArtworkById(id: string): Promise<Artwork[]> {
     })
   )
 }
+
+export async function deleteArtworkById(id: string): Promise<Artwork> {}
+
+export async function updateArtworkById(id: string): Promise<Artwork> {}

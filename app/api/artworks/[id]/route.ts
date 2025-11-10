@@ -1,6 +1,7 @@
 // pages/api/artworks/[id].ts
 import { NextResponse } from 'next/server'
 import { getArtworkById } from '@/lib/queries/artwork'
+import { Artwork } from '@/lib/queries/types'
 
 // TASK FOR DEV: Auth middleware is needed for PATCH/DELETE.
 export async function GET(
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   const id = (await params).id
   try {
-    const artworks = await getArtworkById(id)
+    const artworks: Artwork[] = await getArtworkById(id)
     return NextResponse.json({ artwork: artworks[0] }, { status: 200 })
   } catch (e) {
     return NextResponse.json(
