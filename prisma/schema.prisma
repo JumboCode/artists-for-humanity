@@ -1,132 +1,121 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file for the
+// AFH Digital Archive project.
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+datasource db {
+  provider = "postgresql" // This will use the DATABASE_URL from .env
+  url      = env("DATABASE_URL")
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+// --- ENUMERATIONS ---
+// Used in the User model
+enum Role {
+  STUDENT
+  MENTOR
+  ADMIN
 }
 
-// NextAuth.js required models
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+// Used in the Artwork model
+enum ArtworkStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// Used in the AdminAction model
+enum AdminActionType {
+  ARTWORK_APPROVED
+  ARTWORK_REJECTED
+  ARTWORK_FEATURED
+  ARTWORK_UNFEATURED
+  USER_EDITED
 }
+
+// --- MODELS ---
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?   // For username/password authentication
-  accounts      Account[]
-  sessions      Session[]
-  
-  // Custom fields for Artists for Humanity
-  role          String?   @default("user") // user, admin, moderator
-  bio           String?
-  skills        String[] // Art mediums/skills
-  location      String?
-  school        String?
-  year          String?  // Freshman, Sophomore, etc.
-  
-  // Artwork relationship
-  artworks      Artwork[]
-  
-  // Admin actions (for tracking moderation)
-  adminActions  AdminAction[] @relation("AdminActions")
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  password_hash String
+  role          Role      @default(STUDENT)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  profile           Profile?
+  artworks          Artwork[]      @relation("ArtworkAuthor") // Artworks this user created
+  approved_artworks Artwork[]      @relation("ArtworkApprover") // Artworks this user approved
+  admin_actions     AdminAction[]  @relation("AdminActor") // Actions this admin has taken
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
+model Profile {
+  id                  String   @id @default(uuid())
+  user_id             String   @unique // This enforces the 1-to-1 relation
+  display_name        String?  @db.VarChar(255)
+  bio                 String?
+  profile_image_url   String?
+  department          String?  @db.VarChar(100)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
-  @@unique([identifier, token])
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade) // Deleting a user deletes their profile
 }
 
-// Custom models for Artists for Humanity
 model Artwork {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
+  id                   String    @id @default(uuid())
+  title                String    @db.VarChar(500)
+  description          String?
+  tools_used           String[] // This is your TEXT[] array
+  project_type         String?   @db.VarChar(100)
+  image_url            String
+  thumbnail_url        String?
+  status               ArtworkStatus @default(PENDING)
+  submitted_by_name    String?   @db.VarChar(255)
+  submitted_by_email   String?   @db.VarChar(255)
+  rejection_reason     String?
+  featured             Boolean   @default(false)
+  view_count           Int       @default(0)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  approved_at          DateTime?
+
+  // Relational Fields
+  // The artist/author who submitted it
+  author    User   @relation("ArtworkAuthor", fields: [user_id], references: [id])
+  user_id   String // Foreign key for the author
   
-  // File information
-  fileName    String
-  fileUrl     String
-  fileSize    Int?
-  mimeType    String?
-  
-  // Metadata
-  toolsUsed   String[] // e.g., ["Adobe Illustrator", "Photoshop"]
-  projectType String   // e.g., "Client Project", "Personal Work"
-  tags        String[] // for search and categorization
-  
-  // Moderation
-  status      String   @default("pending") // pending, approved, rejected
-  moderatorId String?
-  moderatedAt DateTime?
-  rejectionReason String?
-  
-  // Artist information (for guest uploads)
-  artistName  String   // Can differ from user.name for guest uploads
-  userId      String?  // null for guest uploads
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@index([status])
-  @@index([userId])
-  @@index([createdAt])
+  // The admin who approved it (nullable)
+  approver     User?   @relation("ArtworkApprover", fields: [approved_by_id], references: [id])
+  approved_by_id String? // Foreign key for the approver
+
+  // Relations
+  admin_actions AdminAction[]
+
+  // --- INDEXES ---
+  // These are from your diagram for performance
+  @@index([status], name: "idx_artworks_status")
+  @@index([featured], name: "idx_artworks_featured")
+  @@index([user_id], name: "idx_artworks_user_id")
+  @@index([created_at(sort: Desc)], name: "idx_artworks_created_at")
 }
 
-
-
-// Admin activity log
 model AdminAction {
-  id          String   @id @default(cuid())
-  adminId     String
-  admin       User     @relation("AdminActions", fields: [adminId], references: [id])
-  action      String   // approved, rejected, edited, assigned
-  targetType  String   // artwork, user
-  targetId    String
-  details     String?  // JSON string with action details
-  createdAt   DateTime @default(now())
+  id          String   @id @default(uuid())
+  action_type AdminActionType
+  metadata    Json?    // This is your JSONB field
+  created_at  DateTime @default(now())
+
+  // Relational Fields
+  // The admin who performed the action
+  admin      User   @relation("AdminActor", fields: [admin_id], references: [id])
+  admin_id   String // Foreign key for the admin
   
-  @@index([adminId])
-  @@index([createdAt])
+  // The artwork the action was related to
+  artwork    Artwork @relation(fields: [artwork_id], references: [id], onDelete: Cascade)
+  artwork_id String // Foreign key for the artwork
 }
