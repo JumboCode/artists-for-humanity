@@ -4,23 +4,46 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET( req: Request) {
+   try {
+    const { searchParams } = new URL(req.url);
 
-  // TASK FOR DEV:
-  // 1. This is the public gallery.
-  // 2. Fetch all artworks where status is 'APPROVED'.
-  // 3. Include pagination (e.g., ?page=1&limit=20).
-  // 4. Include author profile data.
-  // const artworks = await prisma.artwork.findMany({
-  //   where: { status: 'APPROVED' },
-  //   include: { author: { include: { profile: true } } },
-  //   orderBy: { created_at: 'desc' }
-  // });
-  
-  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const skip = (page - 1) * limit;
+
+    const artworks = await prisma.artwork.findMany({
+      where: { status: "APPROVED" },
+      include: {
+        author: {
+          include: {
+            profile: true,
+          },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      skip,
+      take: limit,
+    });
+
+    const total = await prisma.artwork.count({
+      where: { status: "APPROVED" },
+    });
+
+    return NextResponse.json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      artworks,
+    });
+  } catch (err) {
+    console.error("Error fetching artworks:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(
