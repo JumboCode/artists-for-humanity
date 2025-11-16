@@ -1,6 +1,19 @@
-import React from 'react'
+"use client"
 
-const artwork =[
+import React, { useState } from 'react';
+import { Upload, X, Loader2, Send } from 'lucide-react';
+
+const useSession = () => ({ 
+    status: 'authenticated', 
+    data: { 
+        user: { 
+            id: 'mock-user-1234', 
+            name: 'Demo User' 
+        } 
+    } 
+}); 
+
+const artworks =[
     {
       id: 1,
       name: "Alice Johnson",
@@ -51,7 +64,126 @@ const artwork =[
     },
   ]
 
+  const initialFormData = {
+  title: '',
+  description: '',
+  tools_used: '',
+  project_type: '',
+  submitted_by_name: '',
+  submitted_by_email: '',
+};
+
 export default function HomePage() {
+  const { status: authStatus } = useSession(); 
+  const artwork = artworks; 
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formData, setFormData] = useState(initialFormData);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleChange = (e) => {
+    // Crucial Fix: Ensure we are correctly updating the state based on the input name
+    setFormData(prevData => ({ 
+        ...prevData, 
+        [e.target.name]: e.target.value 
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (authStatus !== 'authenticated') {
+        setMessage('You must be logged in to submit artwork.');
+        return;
+    }
+    if (!selectedFile) {
+        setMessage('Please select an image file to upload.');
+        return;
+    }
+
+    setLoading(true);
+    setMessage('Uploading image and submitting artwork...');
+
+    // 1. Create FormData object
+    const data = new FormData();
+    data.append('file', selectedFile); 
+    
+    // 2. Append all text fields
+    Object.entries(formData).forEach(([key, value]) => {
+        data.append(key, value);
+    });
+
+    try {
+      const response = await fetch('/api/artwork', {
+        method: 'POST',
+        body: data, 
+      });
+
+      if (!response.ok) {
+        // Critical Frontend Fix: Check for JSON response before parsing
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            const errorData = await response.json(); 
+            throw new Error(errorData.error || `Submission failed with status ${response.status}.`);
+        } else {
+            // This handles the "Unexpected token '<'" error if the backend returns HTML
+            throw new Error(`Server returned a non-JSON response (Status: ${response.status}). Check backend logs and S3 configuration.`);
+        }
+      }
+
+      const result = await response.json();
+      setMessage(`Success! Artwork "${result.title}" has been submitted for review.`);
+      
+      setTimeout(() => {
+        setIsFormOpen(false); 
+        setFormData(initialFormData);
+        setSelectedFile(null);
+        setMessage('');
+      }, 3000); 
+
+    } catch (error) {
+      console.error("Submission Error:", error);
+      setMessage(error.message || 'An unexpected error occurred during submission.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const Input = ({ label, name, type = "text", required = false, isTextArea = false, helpText = null }) => (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {isTextArea ? (
+        <textarea 
+          id={name} 
+          name={name} 
+          value={formData[name] || ''} // Critical Fix: Ensures the value is not undefined
+          onChange={handleChange} 
+          rows="3"
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+        ></textarea>
+      ) : (
+        <input
+          type={type}
+          id={name}
+          name={name}
+          required={required}
+          value={formData[name] || ''} // Critical Fix: Ensures the value is not undefined
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+        />
+      )}
+      {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
+    </div>
+  );
+  
   return (
     
     <div className="section-padding" style={{ backgroundColor: "#ffffffff" }}>
@@ -161,71 +293,99 @@ export default function HomePage() {
   
   <hr className=" border-t-[1px] border-gray-#69737B my-[60px]" />
 
-  <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl">
+  <div className='flex flex-col items-left justify-center text-left '>
+        <h2 className="text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-4">
           Do you also want to showcase your art on our homepage? Upload your work below.
         </h2>
-        <button className="inline-flex items-center justify-center min-w-[90px] h-[40px] px-[15px] py-[10px] rounded-[50px] border-[1px] border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer my-8">
-          Upload Your Work
-        </button>
+        {authStatus === 'authenticated' ? (
+            <button 
+                onClick={() => {
+                    setIsFormOpen(true);
+                    setMessage('');
+                    setFormData(initialFormData);
+                    setSelectedFile(null);
+                }}
+                className="inline-flex items-center justify-center min-w-[150px] h-[48px] px-6 py-3 rounded-[50px] border-2 border-[#F26729] text-[#F26729] gap-2 font-secondary text-base font-semibold transition-colors duration-300 hover:bg-[#F26729] hover:text-white shadow-lg hover:shadow-xl cursor-pointer my-8"
+            >
+                <Upload size={20} />
+                Submit Artwork
+            </button>
+        ) : (
+            <button 
+                // In a real app, this would redirect or open a sign-in modal
+                className="inline-flex items-center justify-center max-w-[200px] h-[48px] px-6 py-3 rounded-[50px] border-2 border-gray-500 text-gray-500 gap-2 font-secondary text-base font-semibold bg-gray-100 cursor-not-allowed my-8"
+                disabled
+            >
+                <LogIn size={20} />
+                Log In to Submit
+            </button>
+        )}
+        {authStatus !== 'authenticated' && <p className='text-red-500 font-medium'>Submission requires login via NextAuth.</p>}
+      </div>
 
+      {/* Submission Modal */}
+      {isFormOpen && authStatus === 'authenticated' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setIsFormOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 rounded-full transition"
+            >
+              <X size={24} />
+            </button>
+            <h3 className="text-3xl font-bold font-heading text-gray-800 mb-6 border-b pb-2">Submit New Artwork</h3>
+            
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              <div className="border-2 border-dashed border-[#F26729]/50 rounded-lg p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                <label htmlFor="file" className="cursor-pointer block">
+                  <Upload className="mx-auto text-[#F26729] mb-2" size={32} />
+                  <p className="font-semibold text-lg text-gray-800">
+                    {selectedFile ? selectedFile.name : 'Click to select your image file (required)'}
+                  </p>
+                  <input type="file" id="file" name="file" accept="image/*" required onChange={handleFileChange} className="hidden" />
+                </label>
+              </div>
 
-
-      {/*
-      <section className="gallery-grid mb-16">
-
-        <div className="gallery-grid">
-          
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <div key={item} className="card card-hover animate-slide-up">
-              <div className="aspect-square overflow-hidden">
-              <img
-                  src={`lib/imgs/jcimg.jpg`} 
-                  alt={`Artwork ${item}`}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              <Input label="Artwork Title" name="title" required />
+              <Input label="Description" name="description" isTextArea />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input 
+                    label="Tools Used" 
+                    name="tools_used" 
+                    helpText="Separate tools with commas (e.g., Figma, Photoshop, Blender)"
                 />
-                <p className="text-afh-blue/60 font-medium">Artwork {item}</p>
+                <Input label="Project Type (e.g., Digital Painting, 3D Model)" name="project_type" />
               </div>
-              <div className="p-6">
-                <p className="text-sm text-afh-white/70 mb-3">Name</p>
-                <p className="text-sm text-afh-white/60">Adobe Illustrator • Client Project</p>
-              </div>
-            </div>
-          ))}
-        </div>  
-      
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🎨</span>
+              
+              <button
+                type="submit"
+                disabled={loading || !selectedFile || !formData.title}
+                className="w-full flex items-center justify-center bg-[#F26729] text-white p-3 rounded-full font-bold text-lg hover:bg-opacity-90 disabled:bg-gray-400 transition duration-300 shadow-md mt-6"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" size={20} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} className="mr-2" />
+                    Submit Artwork for Review
+                  </>
+                )}
+              </button>
+              
+              {message && (
+                <p className={`mt-4 text-center text-sm p-3 rounded-lg ${message.startsWith('Success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {message}
+                </p>
+              )}
+            </form>
           </div>
-          <h3 className="mb-4">For Young Artists</h3>
-          <p className="text-afh-blue/70">
-            Build your professional portfolio while gaining real-world experience through 
-            paid creative projects and mentorship.
-          </p>
         </div>
-        
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🤝</span>
-          </div>
-          <h3 className="mb-4">For Partners</h3>
-          <p className="text-afh-blue/70">
-            Connect with talented teen artists to bring your creative vision to life 
-            while supporting youth development in Boston.
-          </p>
-        </div> 
-        
-        <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-afh-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🌟</span>
-          </div>
-          <h3 className="mb-4">Community Impact</h3>
-          <p className="text-afh-blue/70">
-            Transcending economic, racial and social divisions to transform communities 
-            through the power of creative expression.
-          </p>
-        </div> 
-      </section> */}
+      )}
     </div>
   )
 }
