@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Upload, X, Loader2, Send } from 'lucide-react';
+import { Upload, X, Loader2, Send, LogIn } from 'lucide-react';
 
 const useSession = () => ({ 
     status: 'authenticated', 
@@ -12,57 +12,15 @@ const useSession = () => ({
         } 
     } 
 }); 
-
-const artworks =[
-    {
-      id: 1,
-      name: "Alice Johnson",
-      title: "Sunset Dreams",
-      medium: "Adobe Illustrator",
-      year: 2023,
-      image: "/imgs/meow.jpg",
-    },
-    {
-      id: 2,
-      name: "Mark Lee",
-      title: "Urban Flow",
-      medium: "Photography",
-      year: 2022,
-      image: "/imgs/meow.jpg",
-    },
-    {
-      id: 3,
-      name: "Sophia Kim",
-      title: "Color Burst",
-      medium: "Watercolor",
-      year: 2023,
-      image: "/imgs/meow.jpg",
-    },
-    {
-      id: 4,
-      name: "Ethan Brown",
-      title: "Abstract Lines",
-      medium: "Adobe Photoshop",
-      year: 2021,
-      image: "/imgs/meow.jpg",
-    },
-    {
-      id: 5,
-      name: "Lily Chen",
-      title: "Nature's Path",
-      medium: "Oil Painting",
-      year: 2022,
-      image: "/imgs/meow.jpg",
-    },
-    {
-      id: 6,
-      name: "David Park",
-      title: "Geometric Dreams",
-      medium: "Sketching",
-      year: 2023,
-      image: "/imgs/meow.jpg",
-    },
-  ]
+const artworks = [
+    // ... (Your artworks array remains the same)
+    { id: 1, name: "Alice Johnson", title: "Sunset Dreams", medium: "Adobe Illustrator", year: 2023, image: "/imgs/meow.jpg" },
+    { id: 2, name: "Mark Lee", title: "Urban Flow", medium: "Photography", year: 2022, image: "/imgs/meow.jpg" },
+    { id: 3, name: "Sophia Kim", title: "Color Burst", medium: "Watercolor", year: 2023, image: "/imgs/meow.jpg" },
+    { id: 4, name: "Ethan Brown", title: "Abstract Lines", medium: "Adobe Photoshop", year: 2021, image: "/imgs/meow.jpg" },
+    { id: 5, name: "Lily Chen", title: "Nature's Path", medium: "Oil Painting", year: 2022, image: "/imgs/meow.jpg" },
+    { id: 6, name: "David Park", title: "Geometric Dreams", medium: "Sketching", year: 2023, image: "/imgs/meow.jpg" },
+];
 
   const initialFormData = {
   title: '',
@@ -72,6 +30,35 @@ const artworks =[
   submitted_by_name: '',
   submitted_by_email: '',
 };
+
+const Input = ({ label, name, type = "text", required = false, isTextArea = false, helpText = null, formData, handleChange }) => (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {isTextArea ? (
+        <textarea 
+          id={name} 
+          name={name} 
+          value={formData[name] || ''} 
+          onChange={handleChange} 
+          rows="3"
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+        ></textarea>
+      ) : (
+        <input
+          type={type}
+          id={name}
+          name={name}
+          required={required}
+          value={formData[name] || ''} 
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+        />
+      )}
+      {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
+    </div>
+  );
 
 export default function HomePage() {
   const { status: authStatus } = useSession(); 
@@ -93,6 +80,8 @@ export default function HomePage() {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
+    } else {
+        setSelectedFile(null); // Clear file if selection is cancelled
     }
   };
 
@@ -104,6 +93,10 @@ export default function HomePage() {
     }
     if (!selectedFile) {
         setMessage('Please select an image file to upload.');
+        return;
+    }
+    if (!formData.title.trim()) {
+        setMessage('Artwork Title is required.');
         return;
     }
 
@@ -119,6 +112,10 @@ export default function HomePage() {
         data.append(key, value);
     });
 
+    const sessionData = useSession().data; 
+    data.append('userId', sessionData.user.id);
+    data.append('submitted_by', sessionData.user.name);
+
     try {
       const response = await fetch('/api/artwork', {
         method: 'POST',
@@ -132,14 +129,16 @@ export default function HomePage() {
             const errorData = await response.json(); 
             throw new Error(errorData.error || `Submission failed with status ${response.status}.`);
         } else {
-            // This handles the "Unexpected token '<'" error if the backend returns HTML
-            throw new Error(`Server returned a non-JSON response (Status: ${response.status}). Check backend logs and S3 configuration.`);
+            const errorText = await response.text();
+            console.error("Server Error Detail:", errorText);
+            throw new Error(`Server returned a non-JSON response (Status: ${response.status}). Check backend logs.`);
         }
       }
 
       const result = await response.json();
       setMessage(`Success! Artwork "${result.title}" has been submitted for review.`);
-      
+      //const image_url = result.image_url;
+
       setTimeout(() => {
         setIsFormOpen(false); 
         setFormData(initialFormData);
@@ -154,35 +153,6 @@ export default function HomePage() {
       setLoading(false);
     }
   };
-
-  const Input = ({ label, name, type = "text", required = false, isTextArea = false, helpText = null }) => (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {isTextArea ? (
-        <textarea 
-          id={name} 
-          name={name} 
-          value={formData[name] || ''} // Critical Fix: Ensures the value is not undefined
-          onChange={handleChange} 
-          rows="3"
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
-        ></textarea>
-      ) : (
-        <input
-          type={type}
-          id={name}
-          name={name}
-          required={required}
-          value={formData[name] || ''} // Critical Fix: Ensures the value is not undefined
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
-        />
-      )}
-      {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
-    </div>
-  );
   
   return (
     
@@ -347,21 +317,23 @@ export default function HomePage() {
                 </label>
               </div>
 
-              <Input label="Artwork Title" name="title" required />
-              <Input label="Description" name="description" isTextArea />
+              {/* 💡 FIX: Correctly pass props to the Input component */}
+              <Input label="Artwork Title" name="title" required formData={formData} handleChange={handleChange} />
+              <Input label="Description" name="description" isTextArea formData={formData} handleChange={handleChange} />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input 
                     label="Tools Used" 
                     name="tools_used" 
                     helpText="Separate tools with commas (e.g., Figma, Photoshop, Blender)"
+                    formData={formData} handleChange={handleChange}
                 />
-                <Input label="Project Type (e.g., Digital Painting, 3D Model)" name="project_type" />
+                <Input label="Project Type (e.g., Digital Painting, 3D Model)" name="project_type" formData={formData} handleChange={handleChange} />
               </div>
               
               <button
                 type="submit"
-                disabled={loading || !selectedFile || !formData.title}
+                disabled={loading || !selectedFile || !formData.title.trim()} // 💡 FIX: Check for empty title string
                 className="w-full flex items-center justify-center bg-[#F26729] text-white p-3 rounded-full font-bold text-lg hover:bg-opacity-90 disabled:bg-gray-400 transition duration-300 shadow-md mt-6"
               >
                 {loading ? (
