@@ -33,7 +33,7 @@ const artworks = [
 
 const Input = ({ label, name, type = "text", required = false, isTextArea = false, helpText = null, formData, handleChange }) => (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={name} className="block text-sm font-medium text-black mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {isTextArea ? (
@@ -43,7 +43,8 @@ const Input = ({ label, name, type = "text", required = false, isTextArea = fals
           value={formData[name] || ''} 
           onChange={handleChange} 
           rows="3"
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+          // Removed the JSX comment style markers (**) and used a strong text color
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150 text-gray-900"
         ></textarea>
       ) : (
         <input
@@ -53,7 +54,8 @@ const Input = ({ label, name, type = "text", required = false, isTextArea = fals
           required={required}
           value={formData[name] || ''} 
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150"
+          // Removed the JSX comment style markers (**) and used a strong text color
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#F26729] focus:border-[#F26729] transition duration-150 text-gray-900"
         />
       )}
       {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
@@ -181,6 +183,7 @@ export default function HomePage() {
       </section>
 
       {/* Carousel Section */}
+
 <section className="w-full mt-16">
 
   <div className="relative w-full overflow-hidden">
@@ -334,7 +337,7 @@ export default function HomePage() {
               <button
                 type="submit"
                 disabled={loading || !selectedFile || !formData.title.trim()} // 💡 FIX: Check for empty title string
-                className="w-full flex items-center justify-center bg-[#F26729] text-white p-3 rounded-full font-bold text-lg hover:bg-opacity-90 disabled:bg-gray-400 transition duration-300 shadow-md mt-6"
+                className="w-full flex items-center justify-center bg-[#F26729] text-black p-3 rounded-full font-bold text-lg hover:bg-opacity-90 disabled:bg-gray-400 transition duration-300 shadow-md mt-6"
               >
                 {loading ? (
                   <>
