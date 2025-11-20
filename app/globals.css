@@ -192,3 +192,13 @@
     transform: translateY(0);
   }
 }
+
+/* Remove default input focus styling */
+input:focus,
+input:focus-visible,
+.search-input:focus,
+.search-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: inherit !important;
+}
