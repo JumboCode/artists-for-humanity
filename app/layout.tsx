@@ -24,11 +24,9 @@ export default function RootLayout({
     <html lang="en" className={poppins.variable}>
       <body className={poppins.className}>
         <Navbar />
-        <div className="min-h-screen bg-afh-white">
-          <main className="container-afh">
-            {children}
-          </main>
-        </div>
+        <main className="min-h-screen bg-white">
+          {children}
+        </main>
       </body>
     </html>
   )
