@@ -173,9 +173,10 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="section-padding" style={{ backgroundColor: "#ffffff" }}>
-      {/* Intro Section */}
-      <section className="justify-left flex flex-col w-full lg:w-[66%] h-auto gap-[20px] max-w-full px-4 lg:px-0">
+    <div className="py-12 sm:py-16 lg:py-20" style={{ backgroundColor: "#ffffff" }}>
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16">
+        {/* Intro Section */}
+        <section className="justify-left flex flex-col w-full lg:w-[66%] h-auto gap-[20px] max-w-full">
         <h2 className="text-left text-black font-heading font-light leading-snug text-4xl sm:text-3xl md:text-4xl">
           Showcasing the Next Generation of Creative Voices
         </h2>
@@ -216,8 +217,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Carousel Section */}
-      <section className="w-full lg:w-[66%] h-auto gap-[20px] max-w-full px-4 lg:px-0 mt-12">
+        {/* Carousel Section */}
+        <section className="w-full lg:w-[66%] h-auto gap-[20px] max-w-full mt-12">
         <Carousel
           autoPlay={true}
           animation="slide"
@@ -237,13 +238,13 @@ export default function HomePage() {
             <ArtworkCarouselItem key={`${art.name}-${art.title}`} art={art} /> 
           ))}
         </Carousel>
-      </section>
+        </section>
 
-      {/* Section line */}
-      <hr className="border-t-[1px] border-gray-400 my-[60px]" />
+        {/* Section line */}
+        <hr className="border-t-[1px] border-gray-400 my-[60px]" />
 
-      {/* Search Field */}
-      <section className="w-full px-4 lg:px-0 mb-8">
+        {/* Search Field */}
+        <section className="w-full mb-8">
         <Box display="flex" alignItems="center" justifyContent="space-between" gap={2} flexWrap="wrap">
           {/* Search Bar */}
           <Box display="flex" alignItems="center" gap={1.5} sx={{ maxWidth: '350px' }}>
@@ -284,13 +285,13 @@ export default function HomePage() {
             </Typography>
           </Box>
         </Box>
-      </section>
+        </section>
 
-      {/* Artwork gallery with Masonry */}
-      <Masonry 
-        columns={{ xs: 1, sm: 2, lg: 3 }} 
-        spacing={{ xs: 2, sm: 3 }}
-        sx={{ width: '100%', margin: '0 auto', px: { xs: 2, sm: 0 } }}
+        {/* Artwork gallery with Masonry */}
+        <Masonry 
+          columns={{ xs: 1, sm: 2, lg: 3 }} 
+          spacing={{ xs: 2, sm: 3 }}
+          sx={{ width: '100%', margin: '0 auto' }}
       >
         {artwork.map((art) => (
           <div key={`${art.name}-${art.title}-gallery`} className="bg-white shadow-none">
@@ -329,20 +330,21 @@ export default function HomePage() {
             </div>
           </div>
         ))}
-      </Masonry>
+        </Masonry>
 
-      {/* Section line */}
-      <hr className="border-t-[1px] border-gray-400 my-[60px]" />
+        {/* Section line */}
+        <hr className="border-t-[1px] border-gray-400 my-[60px]" />
 
-      {/* Call to Action */}
-      <section className="w-full px-4 lg:px-0">
+        {/* Call to Action */}
+        <section className="w-full">
         <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
           Do you also want to showcase your art on our homepage? Upload your work below.
         </h2>
         <button className="inline-flex items-center justify-center min-w-[140px] h-[45px] px-6 py-3 rounded-full border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
           Upload Your Work
         </button>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
