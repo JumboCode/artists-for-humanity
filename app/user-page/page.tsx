@@ -24,11 +24,6 @@ const graduationYears =
   "2029",
   "2030",
 ]
-// Placeholder SVG data URIs - replace with actual images after merge
-const PLACEHOLDER_BANNER = "data:image/svg+xml,%3Csvg width='1200' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23313E48'/%3E%3C/svg%3E";
-const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23E5E5E5'/%3E%3Ccircle cx='200' cy='200' r='80' fill='%23313E48'/%3E%3C/svg%3E";
-const PLACEHOLDER_ARTWORK = "data:image/svg+xml,%3Csvg width='600' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23F5F5F5'/%3E%3Crect x='200' y='200' width='200' height='200' fill='%23CCCCCC'/%3E%3C/svg%3E";
-
 const initialProfile = 
 { 
   firstName: "John",
@@ -37,41 +32,55 @@ const initialProfile =
   year: "2029", 
   school: "Tufts University", 
   instagram: "Username01", 
-  avatar: PLACEHOLDER_AVATAR, 
-  banner: PLACEHOLDER_BANNER 
+  avatar: "/imgs/user-stock.png", 
+  banner: "/imgs/profile-banner-temp.png" 
 }
 const publicArtwork = 
 [
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "image 1"
+    image: "/Griffin 1.jpg", 
+    title: "Griffin Artwork 1",
+    medium: "Digital Art",
+    year: "2024"
   }, 
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "image 2"
+    image: "/Griffin 3.jpg", 
+    title: "Griffin Artwork 3",
+    medium: "Photography",
+    year: "2024"
   }, 
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "image 3"
+    image: "/Syleah 2.png", 
+    title: "Syleah Artwork 2",
+    medium: "Digital Design",
+    year: "2024"
   }, 
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "image 4"
+    image: "/Ashley 1.JPG", 
+    title: "Ashley Artwork 1",
+    medium: "Mixed Media",
+    year: "2024"
   }, 
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "image 5"
+    image: "/Griffin 4.jpg", 
+    title: "Griffin Artwork 4",
+    medium: "Digital Art",
+    year: "2024"
   }
 ]
 const privateArtwork = 
 [
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "draft 1"
+    image: "/imgs/meow.jpg", 
+    title: "Draft Project 1",
+    medium: "Photography",
+    year: "2024"
   },
   {
-    image: PLACEHOLDER_ARTWORK, 
-    title: "draft 2"
+    image: "/Ashley 2.JPG", 
+    title: "Draft Project 2",
+    medium: "Illustration",
+    year: "2024"
   },
 
 ]
@@ -172,7 +181,7 @@ export default function UserPage() {
               <button className = {`relative h-full border-b-2 bottom-[-2px] ${onPublished ? "border-transparent" : "border-black"}`} onClick = {() => setTab(false)}> Drafts </button>
             </div>
             {onPublished && (
-              <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
+              <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary">
                   {publicArtwork.map((art) => (
                       <div key={art.title} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
@@ -182,7 +191,10 @@ export default function UserPage() {
                           width={600}
                           height={600}
                         />
-                        <p className = "p-2"> {art.title} </p>
+                        <div className="p-2 flex flex-col gap-1">
+                          <p className="font-medium text-[14px]">{art.title}</p>
+                          <p className="text-[12px] text-gray-600">{art.medium}, {art.year}</p>
+                        </div>
                       </div>
                   ))} 
               </div>
@@ -206,7 +218,10 @@ export default function UserPage() {
                           width={600}
                           height={600}
                         />
-                        <p className = "p-2"> {art.title} </p>
+                        <div className="p-2 flex flex-col gap-1">
+                          <p className="font-medium text-[14px]">{art.title}</p>
+                          <p className="text-[12px] text-gray-600">{art.medium}, {art.year}</p>
+                        </div>
                       </div>
                   ))} 
               </div>
