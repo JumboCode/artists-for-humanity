@@ -224,33 +224,26 @@ export default function UploadPage() {
 
         {/* Artwork Medium */}
         <div className="w-full">
-          <div className="relative">
-            <select
-              id="medium"
-              name="medium"
-              value={formData.medium}
-              onChange={handleChange}
-              required
-              className="w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light appearance-none cursor-pointer"
-            >
-              <option value=""></option>
-              <option value="Digital Art">Digital Art</option>
-              <option value="Painting">Painting</option>
-              <option value="Photography">Photography</option>
-              <option value="Mixed Media">Mixed Media</option>
-              <option value="Sculpture">Sculpture</option>
-              <option value="Drawing">Drawing</option>
-              <option value="Printmaking">Printmaking</option>
-              <option value="Video">Video</option>
-              <option value="Installation">Installation</option>
-              <option value="Other">Other</option>
-            </select>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
+          <select
+            id="medium"
+            name="medium"
+            value={formData.medium}
+            onChange={handleChange}
+            required
+            className="w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light cursor-pointer"
+          >
+            <option value=""></option>
+            <option value="Digital Art">Digital Art</option>
+            <option value="Painting">Painting</option>
+            <option value="Photography">Photography</option>
+            <option value="Mixed Media">Mixed Media</option>
+            <option value="Sculpture">Sculpture</option>
+            <option value="Drawing">Drawing</option>
+            <option value="Printmaking">Printmaking</option>
+            <option value="Video">Video</option>
+            <option value="Installation">Installation</option>
+            <option value="Other">Other</option>
+          </select>
           <label htmlFor="medium" className="block mt-2 text-sm font-light text-gray-700">
             Artwork Medium
           </label>
