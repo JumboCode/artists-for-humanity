@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma' 
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { AdminActionType } from '@prisma/client';
+import { AdminActionType, ArtworkStatus } from '@prisma/client';
 
 
 /** 
@@ -16,58 +16,77 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // const adminId = "GET_FROM_SESSION_MIDDLEWARE";
-
-  const { id } = await params
-  
-  // TASK FOR DEV:
-  // 1. Get user ID from session (MUST be admin).
-  // 2. Find the artwork by its ID.
-  // 3. Create an AdminAction: action_type='USER_EDITED', admin_id=adminId, artwork_id=id, metadata={ oldUserId: '...', newUserId: newUserId }
-
   const session = await getServerSession(authOptions);
 
   // Check if user is logged in
-  // if (!session?.user?.id) {
-  //   return NextResponse.json(
-  //     { message: 'Unauthorized Action: Please Login' }, 
-  //     { status: 401 }
-  //   );
-  // }
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json(
+      { message: 'Unauthorized Action: Please Login' }, 
+      { status: 401 }
+    );
+  }
 
   // Check if user is an admin
-  // if (session.user.role !== 'ADMIN') {
-  //   return NextResponse.json(
-  //     { message: 'Forbidden: Requires admin privileges' },
-  //     { status: 403 }
-  //   );
-  // }
+  if (session.user.role !== 'ADMIN') {
+    return NextResponse.json(
+      { message: 'Forbidden: Requires admin privileges' },
+      { status: 403 }
+    );
+  }
 
-  // Securely get the admin ID from the session
-  // const adminId = session.user.id;
-  const adminId = "test";
-  const { id: artworkId } = (await params);
-
-  // Check if artworkId provided
-  if (!artworkId) {
+  // Check if artwork ID provided
+  const { id } = await params;
+  if (!id) {
     return NextResponse.json(
       { message: 'Artwork ID is required' },
       { status: 400 }
     );
   }
 
-  const body = await req.json().catch(() => ({}));
+  // Get request body
+  let body;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return NextResponse.json(
+      { message: 'Invalid JSON in request body' },
+      { status: 400 }
+    );
+  }
+
+  // Validate rejection_reason
+  //TODO not sure if required or not
+  if (!body.rejection_reason || typeof body.rejection_reason !== 'string') {
+    return NextResponse.json(
+      { message: 'Rejection reason is required and must be a string' },
+      { status: 400 }
+    );
+  }
 
   try {
+    // Get artwork for previous status
+    const [previousArtwork] = await prisma.$transaction([
+      prisma.artwork.findUnique({
+        where: { id }
+      })
+    ])
+
+    // Check if artwork exists
+    if (!previousArtwork) {
+      return NextResponse.json(
+        { message: 'Artwork not found' },
+        { status: 404 }
+      );
+    }
 
     const [updatedArtwork] = await prisma.$transaction([
       // Update artwork
       prisma.artwork.update({
         where: { id },
         data: {
-          status: "REJECTED",
+          status: ArtworkStatus.REJECTED,
           rejection_reason: body.rejection_reason,
-          updated_at: new Date(),
         }
       }),
 
@@ -77,12 +96,11 @@ export async function PATCH(
           action_type: AdminActionType.ARTWORK_REJECTED,
           metadata: {
             reason: body.rejection_reason,
-//TODO            previous_status: ,
+            previous_status: previousArtwork.status,
             notification_sent: false,
           },
-          created_at: new Date(),
-          admin_id: adminId,
-          artwork_id: artworkId,
+          admin_id: userId,
+          artwork_id: id,
         }
       })
     ]);
@@ -91,6 +109,7 @@ export async function PATCH(
     return NextResponse.json(updatedArtwork, { status: 200 });
   
   } catch (error) {
+    // Log error and return 500
     console.error(error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
