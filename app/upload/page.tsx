@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, DragEvent } from "react"
+import { useState, useRef, useEffect, DragEvent } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import ImageIcon from "@mui/icons-material/Image"
@@ -27,10 +27,11 @@ export default function UploadPage() {
   const [errorMessage, setErrorMessage] = useState("")
 
   // Redirect to login if not authenticated
-  if (sessionStatus === "unauthenticated") {
-    router.push("/login")
-    return null
-  }
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [sessionStatus, router])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -180,10 +181,12 @@ export default function UploadPage() {
     }
   }
 
-  if (sessionStatus === "loading") {
+  if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-afh-blue text-lg">Loading...</p>
+        <p className="text-afh-blue text-lg">
+          {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
+        </p>
       </div>
     )
   }
