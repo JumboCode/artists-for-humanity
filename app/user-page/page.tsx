@@ -1,8 +1,5 @@
 "use client"; 
 import Image from "next/image";
-import banner from "../imgs/profile-banner-temp.png";
-import userImg from "../imgs/user-stock.png"
-import meow from "../imgs/meow.jpg"
 import { useState } from "react";
 
 
@@ -27,6 +24,11 @@ const graduationYears =
   "2029",
   "2030",
 ]
+// Placeholder SVG data URIs - replace with actual images after merge
+const PLACEHOLDER_BANNER = "data:image/svg+xml,%3Csvg width='1200' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23313E48'/%3E%3C/svg%3E";
+const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23E5E5E5'/%3E%3Ccircle cx='200' cy='200' r='80' fill='%23313E48'/%3E%3C/svg%3E";
+const PLACEHOLDER_ARTWORK = "data:image/svg+xml,%3Csvg width='600' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23F5F5F5'/%3E%3Crect x='200' y='200' width='200' height='200' fill='%23CCCCCC'/%3E%3C/svg%3E";
+
 const initialProfile = 
 { 
   firstName: "John",
@@ -35,40 +37,40 @@ const initialProfile =
   year: "2029", 
   school: "Tufts University", 
   instagram: "Username01", 
-  avatar: "/imgs/user-stock.jpg", 
-  banner: "/imgs/profile-banner-temp.png" 
+  avatar: PLACEHOLDER_AVATAR, 
+  banner: PLACEHOLDER_BANNER 
 }
 const publicArtwork = 
 [
   {
-    image: meow, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "image 1"
   }, 
   {
-    image: meow, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "image 2"
   }, 
   {
-    image: banner, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "image 3"
   }, 
   {
-    image: userImg, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "image 4"
   }, 
   {
-    image: meow, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "image 5"
   }
 ]
 const privateArtwork = 
 [
   {
-    image: meow, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "draft 1"
   },
   {
-    image: meow, 
+    image: PLACEHOLDER_ARTWORK, 
     title: "draft 2"
   },
 
@@ -105,9 +107,11 @@ export default function UserPage() {
       {/* 🔸 FULL-WIDTH HERO IMAGE */}
       <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
         <Image
-          src={banner}
+          src={profile.banner}
           alt="Banner Image"
-          className="w-full h-[30vh]"
+          className="w-full h-[30vh] object-cover"
+          width={1200}
+          height={300}
           priority
         />
       </div>
@@ -119,7 +123,7 @@ export default function UserPage() {
           <div className="flex flex-col">
             <div className="w-[100px] h-[100px] rounded-full overflow-hidden border-4 border-white bg-white">
               <Image 
-                src={userImg}
+                src={profile.avatar}
                 alt="user profile picture"
                 width={100}
                 height={100}
@@ -169,12 +173,14 @@ export default function UserPage() {
             </div>
             {onPublished && (
               <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
-                  {publicArtwork.map((art, index) => (
-                      <div key ={index} className = "card card-hover bg-white flex flex-col gap-[10px]">
+                  {publicArtwork.map((art) => (
+                      <div key={art.title} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
                           src={art.image}
                           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           alt= {`your published artwork, titled ${art.title}`}
+                          width={600}
+                          height={600}
                         />
                         <p className = "p-2"> {art.title} </p>
                       </div>
@@ -191,12 +197,14 @@ export default function UserPage() {
                     </button>
                     <button className = "text-[20px] lg:text-[12px] md:text-[15px] max-md:text-[15px] btn-outline border-[1px] rounded-full font-primary font-light inline-flex justify-start"> + Upload New Project</button>
                 </div>
-                  {privateArtwork.map((art, index) => (
-                      <div key ={index} className = "card card-hover bg-white flex flex-col gap-[10px]">
+                  {privateArtwork.map((art) => (
+                      <div key={art.title} className = "card card-hover bg-white flex flex-col gap-[10px]">
                         <Image  
                           src={art.image}
                           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           alt= {`your draft titled ${art.title}`}
+                          width={600}
+                          height={600}
                         />
                         <p className = "p-2"> {art.title} </p>
                       </div>
