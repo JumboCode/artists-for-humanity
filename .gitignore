@@ -41,3 +41,9 @@ Thumbs.db
 .env.test.local
 .env.production.local
 /src/generated/prisma
+
+# Notes folders
+notes/
+NOTES/
+app/**/notes/
+app/**/NOTES/
