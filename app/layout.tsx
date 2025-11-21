@@ -1,6 +1,7 @@
 import './globals.css'
 import { Poppins } from 'next/font/google'
-import Navbar from "./components/Navbar";
+import Navbar from "./components/Navbar"
+import { Providers } from "./providers"
 
 const poppins = Poppins({ 
   subsets: ['latin'],
@@ -23,10 +24,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <body className={poppins.className}>
-        <Navbar />
-        <main className="min-h-screen bg-white">
-          {children}
-        </main>
+        <Providers>
+          <Navbar />
+          <div className="min-h-screen bg-afh-white w-full">
+            <main className="container-afh">
+              {children}
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   )
