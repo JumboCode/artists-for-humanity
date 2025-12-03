@@ -10,8 +10,11 @@ async function uploadFileToStorage(file: File) {
   const timestamp = Date.now()
   const sanitizedName = file.name.replaceAll(' ', '_')
   const publicUrl = `https://mock-storage.com/artworks/${timestamp}-${sanitizedName}`
-  const thumbnailUrl = publicUrl.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '_thumb.$1')
-  
+  const thumbnailUrl = publicUrl.replace(
+    /\.(jpg|jpeg|png|gif|webp)$/i,
+    '_thumb.$1'
+  )
+
   return { publicUrl, thumbnailUrl }
 }
 
@@ -79,7 +82,7 @@ export async function POST(req: Request) {
     // Extract required fields
     const file = formData.get('file') as File | null
     const title = formData.get('title') as string
-    
+
     // Extract optional fields
     const description = formData.get('description') as string | null
     const tools_used = formData.get('tools_used') as string | null
@@ -87,17 +90,11 @@ export async function POST(req: Request) {
 
     // Validation
     if (!file) {
-      return NextResponse.json(
-        { error: 'File is required.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'File is required.' }, { status: 400 })
     }
 
     if (!title || title.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Title is required.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Title is required.' }, { status: 400 })
     }
 
     if (title.length > 500) {
@@ -145,7 +142,8 @@ export async function POST(req: Request) {
       thumbnail_url,
       status: 'PENDING' as const,
       user_id: session.user.id,
-      submitted_by_name: session.user.username || session.user.name || 'Anonymous',
+      submitted_by_name:
+        session.user.username || session.user.name || 'Anonymous',
       description: description?.trim() || null,
       tools_used: tools_used ? [tools_used] : [],
       project_type: project_type || null,
@@ -174,6 +172,3 @@ export async function POST(req: Request) {
     )
   }
 }
-
-
-
