@@ -1,63 +1,120 @@
 'use client'
 import Link from 'next/link'
-import { PasswordTextField } from './PasswordTextField'
-import { UsernameTextField } from './UsernameTextField'
-import { ChangeEvent, useEffect, useState } from 'react'
+import { FormField } from '../common/FormField'
+import { PasswordTextField } from '../common/PasswordFormField'
+import { ChangeEvent, FormEvent, useState } from 'react'
 import { LoginButton } from './LoginButton'
+import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export const LoginBody = () => {
-  const [username, setUserName] = useState('')
-  const [password, setPassword] = useState('')
-
-  const [showUsernameError, setShowUsernameError] = useState(false)
-  const [showPasswordError, setShowPasswordError] = useState(false)
+  const router = useRouter()
+  const [formData, setFormData] = useState({ username: '', password: '' })
+  const [errors, setErrors] = useState<{ [key: string]: boolean }>({})
   const [showFormError, setShowFormError] = useState(false)
+  const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleUsernameChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setUserName(() => e.target.value)
-    setShowUsernameError(() => username.includes('error'))
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }))
+
+    // Clear error when user starts typing
+    setErrors(prev => ({
+      ...prev,
+      [name]: false,
+    }))
+    setShowFormError(false)
   }
 
-  const handlePasswordChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setPassword(() => e.target.value)
-    setShowPasswordError(() => password.includes('error'))
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+
+    // Validate
+    const newErrors: { [key: string]: boolean } = {}
+    if (!formData.username.trim()) newErrors.username = true
+    if (!formData.password) newErrors.password = true
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setShowFormError(true)
+      setFormErrorMessage('Please fill in all fields.')
+      return
+    }
+
+    setIsLoading(true)
+    setShowFormError(false)
+
+    try {
+      const result = await signIn('credentials', {
+        username: formData.username,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setShowFormError(true)
+        setFormErrorMessage('Invalid username or password. Please try again.')
+      } else {
+        // Success! Redirect to user portal
+        router.push('/user-portal')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setShowFormError(true)
+      setFormErrorMessage('An error occurred during login. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="flex flex-col h-full w-full gap-[30px]">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col h-full w-full gap-[30px]"
+    >
       <h1 className="font-light text-3xl font-heading text-afh-blue">
         Student Portal Login
       </h1>
       <hr className="border border-gray-300" />
       <div className="flex flex-col gap-[60px]">
         <SignUpSection />
-        <UsernameTextField
-          username={username}
-          onFieldChange={handleUsernameChange}
-          showError={showUsernameError}
+        <FormField
+          label="Username"
+          value={formData.username}
+          name="username"
+          errorMessage="Please enter your username"
+          onChange={handleChange}
+          showError={errors.username}
+          required
         />
-        <div className="flex flex-col gap-2.5">
-          <PasswordTextField
-            password={password}
-            onFieldChange={handlePasswordChange}
-            showError={showPasswordError}
-          />
-          <ForgotPassword />
-        </div>
+        <PasswordTextField
+          label="Password"
+          value={formData.password}
+          name="password"
+          errorMessage="Please enter your password"
+          onChange={handleChange}
+          showError={errors.password}
+          required
+        />
       </div>
 
       {showFormError && (
-        <label className="text-afh-orange font-secondary font-extralight">
-          The email address or password you entered is incorrect. Please try
-          again.
-        </label>
+        <div
+          className="text-afh-orange font-secondary font-extralight"
+          role="alert"
+        >
+          {formErrorMessage}
+        </div>
       )}
-      <LoginButton />
-    </div>
+      <div className="flex justify-end">
+        <LoginButton isLoading={isLoading} />
+      </div>
+    </form>
   )
 }
 

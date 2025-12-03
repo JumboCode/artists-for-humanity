@@ -1,9 +1,15 @@
-import { getArtworkById } from '@/lib/queries/artwork'
+interface LoginButtonProps {
+  isLoading?: boolean
+}
 
-export const LoginButton = () => {
+export const LoginButton = ({ isLoading = false }: LoginButtonProps) => {
   return (
-    <button className="border rounded-[50px] px-[15px] py-2.5 w-fit lg:self-end border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white transition-colors font-medium">
-      Login
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="border rounded-[50px] px-[15px] py-2.5 w-fit lg:self-end border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isLoading ? 'Logging in...' : 'Login'}
     </button>
   )
 }
