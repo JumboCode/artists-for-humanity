@@ -20,11 +20,13 @@ export default async function HomePage() {
       name: row.submitted_by_name ?? '',
       title: row.title,
       medium: row.tools_used?.join(', ') ?? '',
-      year: 0,
+      // does this make sense for year? Wouldn't this be upload date instead of art creation date?
+      year: new Date(row.created_at).getFullYear(),
       image: row.image_url,
     }))
   } catch (e) {
-    // handle failed fetch
+    // handle failed fetch. How to display failed fetch? Loading state?
+    console.error(e)
   }
 
   return (
