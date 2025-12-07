@@ -66,46 +66,100 @@ export async function POST(req: Request) {
     // Check authentication
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'You must be logged in to submit artwork.' },
-        { status: 401 }
-      )
-    }
+    //TODO if (!session?.user?.id) {
+    //   return NextResponse.json(
+    //     { error: 'You must be logged in to submit artwork.' },
+    //     { status: 401 }
+    //   )
+    // }
 
-    // Parse FormData
-    const formData = await req.formData()
+    // Parse data
+    const data = await req.json()
 
     // Extract required fields
-    const file = formData.get('file') as File | null
-    const title = formData.get('title') as string
+    const image_base64 = data.image_base64 as string | null
+    const title = data.title as string
     
     // Extract optional fields
-    const description = formData.get('description') as string | null
-    const tools_used = formData.get('tools_used') as string | null
-    const project_type = formData.get('project_type') as string | null
+    const description = data.description as string | null
+    const tools_usedString = data.tools_used as string | null
+    const completion_date = data.completion_date as string | null
+    const project_type = data.project_type as string | null
 
-    // Validation
-    if (!file) {
-      return NextResponse.json(
-        { error: 'File is required.' },
-        { status: 400 }
-      )
-    }
-
+    // Title validation
     if (!title || title.trim().length === 0) {
       return NextResponse.json(
         { error: 'Title is required.' },
         { status: 400 }
       )
     }
-
-    if (title.length > 500) {
+    if (title.length > 200) {
       return NextResponse.json(
-        { error: 'Title must be less than 500 characters.' },
+        { error: 'Title must be less than 200 characters.' },
         { status: 400 }
       )
     }
+
+    // Get tools_used as array
+    let tools_used: string[] | null = null
+    if (tools_usedString && tools_usedString.trim().length > 0) {
+      tools_used = tools_usedString.split(',').map((tool) => tool.trim())
+    }
+    if (tools_used && tools_used.length > 3) {
+      return NextResponse.json(
+        { error: 'You can only select up to 3 mediums.' },
+        { status: 400 }
+      )
+    }
+
+    // Completion date validation
+    if (!completion_date || completion_date.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Completion date is required.' },
+        { status: 400 }
+      )
+    }
+    if (completion_date.length > 50) {
+      return NextResponse.json(
+        { error: 'Completion date must be less than 50 characters.' },
+        { status: 400 }
+      )
+    }
+
+    // Description validation
+    if (description && description.length > 1000) {
+      return NextResponse.json(
+        { error: 'Description must be less than 1000 characters.' },
+        { status: 400 }
+      )
+    }
+
+    // File presence validation
+    if (!image_base64 || image_base64.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'File is required.' },
+        { status: 400 }
+      )
+    }
+
+    // Convert base64 to File object
+    //TODO check if better way exists
+    const matches = image_base64.match(/^data:(.+);base64,(.+)$/)
+    if (!matches || matches.length !== 3) {
+      return NextResponse.json(
+        { error: 'Invalid file data.' },
+        { status: 400 }
+      )
+    }
+    const mimeType = matches[1]
+    const base64Data = matches[2]
+    const byteCharacters = atob(base64Data)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const file = new File([byteArray], 'upload', { type: mimeType })
 
     // File validation
     const maxSize = 10 * 1024 * 1024 // 10MB
@@ -134,20 +188,25 @@ export async function POST(req: Request) {
     }
 
     // Upload file to storage
-    const uploadResult = await uploadFileToStorage(file)
-    const image_url = uploadResult.publicUrl
-    const thumbnail_url = uploadResult.thumbnailUrl
+    //TODO const uploadResult = await uploadFileToStorage(file)
+    // const image_url = uploadResult.publicUrl
+    // const thumbnail_url = uploadResult.thumbnailUrl
+    const timestamp = Date.now()
+    const sanitizedName = `artwork-${timestamp}`
+    const image_url = `https://mock-storage.com/artworks/${sanitizedName}.${mimeType.split('/')[1]}`
+    const thumbnail_url = image_url.replace(/\.([^.]+)$/, '_thumb.$1')
 
     // Prepare data for database
     const artworkData = {
       title: title.trim(),
       image_url,
       thumbnail_url,
-      status: 'PENDING' as const,
-      user_id: session.user.id,
-      submitted_by_name: session.user.username || session.user.name || 'Anonymous',
+      status: 'PENDING',
+      submitted_by_name: session?.user.username || session?.user.name || 'Anonymous',
+      submitted_by_email: session?.user.email || null,
       description: description?.trim() || null,
-      tools_used: tools_used ? [tools_used] : [],
+      tools_used: tools_used || [],
+      completion_date: completion_date?.trim() || null,
       project_type: project_type || null,
       featured: false,
       view_count: 0,

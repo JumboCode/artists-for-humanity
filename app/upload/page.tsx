@@ -5,17 +5,32 @@ import { useRouter } from "next/navigation"
 import ImageIcon from "@mui/icons-material/Image"
 import AppsIcon from "@mui/icons-material/Apps"
 import VideocamIcon from "@mui/icons-material/Videocam"
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 
 type FileType = "image" | "gallery" | "video" | null
+
+const MEDIUM_OPTIONS = [
+  "Digital Art",
+  "Painting",
+  "Photography",
+  "Mixed Media",
+  "Sculpture",
+  "Drawing",
+  "Printmaking",
+  "Video",
+  "Installation",
+  "Other",
+]
 
 export default function UploadPage() {
   const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   
   const [formData, setFormData] = useState({
     title: "",
-    medium: "",
+    mediums: [] as string[],
     completionDate: "",
     description: "",
     file: null as File | null,
@@ -24,28 +39,112 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
-  // Redirect to login if not authenticated
+  //TODO Redirect to login if not authenticated
+  // useEffect(() => {
+  //   if (sessionStatus === "unauthenticated") {
+  //     router.push("/login")
+  //   }
+  // }, [sessionStatus, router])
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
-      router.push("/login")
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
     }
-  }, [sessionStatus, router])
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const addErrorMessage = (field: string, message: string) => {
+    setStatus("error")
+    setErrors((prev) => ({ ...prev, [field]: message }))
+  }
+
+  const removeErrorMessage = (field: string) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev }
+      delete newErrors[field]
+      return newErrors
+    })
+  }
+
+  const getErrorMessage = () => {
+    const errorMessages = Object.values(errors)
+    return errorMessages.length > 0 ? errorMessages.join("; ") : null
+  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
+
+    // Update form data
     setFormData((prev) => ({ ...prev, [name]: value }))
-    if (status === "error") setStatus("idle") // Clear error on input
+
+    // Validation
+    validate()
+  }
+
+  const handleMediumToggle = (medium: string) => {
+    setFormData((prev) => {
+      const isSelected = prev.mediums.includes(medium)
+      let newMediums = prev.mediums
+      
+      if (isSelected) {
+        newMediums = newMediums.filter((m) => m !== medium)
+      } else {
+        newMediums = [...newMediums, medium]
+      }
+
+      return { ...prev, mediums: newMediums }
+    })
+
+    validate()
+  }
+
+  const validate = () => {
+    const { title, description, completionDate } = formData
+
+    // Reset error fields
+    setStatus("idle")
+    setErrors({})
+
+    // Title
+    if (title.length > 200) {
+      addErrorMessage("title", "Title cannot exceed 200 characters")
+    }
+
+    // Completion Date
+    if (completionDate.length > 50) {
+      addErrorMessage("completionDate", "Completion date cannot exceed 50 characters")
+    }
+
+    // Mediums
+    if (formData.mediums.length > 3) {
+      addErrorMessage("mediums", "You can only select up to 3 mediums")
+    }
+
+    // Description
+    if (description.length > 1000) {
+      addErrorMessage("description", "Description cannot exceed 1000 characters")
+    }
+
+    // File
+    if (formData.file) validateFile(formData.file)
   }
 
   const validateFile = (file: File): boolean => {
     const maxSize = 10 * 1024 * 1024 // 10MB
     
     if (file.size > maxSize) {
-      setErrorMessage("File size must be less than 10MB")
+      addErrorMessage("file", "File size must be less than 10MB")
       return false
     }
 
@@ -60,7 +159,7 @@ export default function UploadPage() {
       : [...allowedTypes.image, ...allowedTypes.video]
 
     if (!validTypes.includes(file.type)) {
-      setErrorMessage(`Invalid file type. Please upload a valid ${selectedFileType || "media"} file.`)
+      addErrorMessage("file", `Invalid file type. Please upload a valid ${selectedFileType || "media"} file.`)
       return false
     }
 
@@ -69,10 +168,9 @@ export default function UploadPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
-    if (file && validateFile(file)) {
-      setFormData((prev) => ({ ...prev, file }))
-      setErrorMessage("")
-    }
+    if (!file) return
+    setFormData((prev) => ({ ...prev, file }))
+    validate()
   }
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -90,10 +188,9 @@ export default function UploadPage() {
     setIsDragging(false)
     
     const file = e.dataTransfer.files?.[0] || null
-    if (file && validateFile(file)) {
-      setFormData((prev) => ({ ...prev, file }))
-      setErrorMessage("")
-    }
+    if (!file) return
+    setFormData((prev) => ({ ...prev, file }))
+    validate()
   }
 
   const handleFileTypeClick = (type: FileType) => {
@@ -106,46 +203,57 @@ export default function UploadPage() {
   const getUploadBoxClasses = () => {
     if (isDragging) return "border-afh-orange bg-afh-orange/5"
     if (formData.file) return "border-green-500 bg-green-50"
+    if (errors.file) return "border-red-500 bg-red-50"
     return "border-gray-300"
+  }
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorMessage("")
+    setStatus("idle")
     
-    // Validation
+    // Submit-specific validation
     if (!formData.title.trim()) {
-      setStatus("error")
-      setErrorMessage("Artwork title is required")
+      addErrorMessage("title", "Artwork title is required")
       return
     }
-    
-    if (!formData.medium) {
-      setStatus("error")
-      setErrorMessage("Please select an artwork medium")
+    if (formData.mediums.length === 0) {
+      addErrorMessage("mediums", "Please select at least one artwork medium")
       return
     }
-    
+    if (formData.completionDate.trim() === "") {
+      addErrorMessage("completionDate", "Completion date is required")
+      return
+    }
     if (!formData.file) {
-      setStatus("error")
-      setErrorMessage("Please upload a file")
+      addErrorMessage("file", "Please upload a file")
       return
     }
 
-    if (!session?.user?.id) {
-      setStatus("error")
-      setErrorMessage("You must be logged in to submit artwork")
-      return
-    }
+    //TODO if (!session?.user?.id) {
+    //   addErrorMessage("session", "You must be logged in to submit artwork")
+    //   return
+    // }
 
     setIsSubmitting(true)
+    setUploadProgress(0);
+
+    
 
     try {
       // Prepare FormData for upload
       const uploadData = new FormData()
       uploadData.append("file", formData.file)
       uploadData.append("title", formData.title)
-      uploadData.append("tools_used", formData.medium)
+      uploadData.append("tools_used", formData.mediums.join(", "))
       uploadData.append("project_type", selectedFileType || "image")
       
       if (formData.description) {
@@ -155,11 +263,24 @@ export default function UploadPage() {
       if (formData.completionDate) {
         uploadData.append("completion_date", formData.completionDate)
       }
+      
+      //TODO const imageUrl = await uploadToCloudinary(formData.file);
+      const imageBase64 = await fileToBase64(formData.file);
 
-      const response = await fetch("/api/artworks", {
-        method: "POST",
-        body: uploadData,
-      })
+      const response = await fetch('/api/artworks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          tools_used: formData.mediums.join(", "),
+          completion_date: formData.completionDate,
+          //TODO image_url: imageUrl,
+          image_base64: imageBase64,
+          //TODO submitted_by_name: session.user.name,
+          // submitted_by_email: session.user.email,
+        })
+      });
 
       if (!response.ok) {
         const error = await response.json()
@@ -174,28 +295,27 @@ export default function UploadPage() {
       }, 2000)
       
     } catch (error) {
-      setStatus("error")
-      setErrorMessage(error instanceof Error ? error.message : "Failed to upload artwork")
+      addErrorMessage("upload", error instanceof Error ? error.message : "Failed to upload artwork")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-afh-blue text-lg">
-          {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
-        </p>
-      </div>
-    )
-  }
+  //TODO if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <p className="text-afh-blue text-lg">
+  //         {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
+  //       </p>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-white px-4 sm:px-8 md:px-16 lg:px-32 py-12 sm:py-16 md:py-20">
       {/* Header */}
-      <section className="mb-14 sm:mb-16 md:mb-20 text-left animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-snug max-w-3xl">
+      <section className="mb- sm:mb-6 md:mb-8 text-left animate-fade-in">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-snug max-w-2xl">
           Start building your project
         </h1>
       </section>
@@ -205,6 +325,15 @@ export default function UploadPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-4xl space-y-10 sm:space-y-12 animate-fade-in"
       >
+        {/* Error Message */}
+        {status === "error" && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-fade-in">
+            <p className="text-red-600 font-light text-base">
+              {getErrorMessage()}
+            </p>
+          </div>
+        )}
+        
         {/* Artwork Title */}
         <div className="w-full">
           <input
@@ -215,37 +344,63 @@ export default function UploadPage() {
             onChange={handleChange}
             placeholder=""
             required
-            className="w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent"
+            className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
           />
-          <label htmlFor="title" className="block mt-2 text-sm font-light text-gray-700">
-            Artwork Title
+          <label htmlFor="title" className={`block mt-2 text-sm font-light ${errors.title ? 'text-red-500' : 'text-gray-700'}`}>
+            Artwork Title*
           </label>
         </div>
 
         {/* Artwork Medium */}
         <div className="w-full">
-          <select
-            id="medium"
-            name="medium"
-            value={formData.medium}
-            onChange={handleChange}
-            required
-            className="w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light cursor-pointer"
-          >
-            <option value=""></option>
-            <option value="Digital Art">Digital Art</option>
-            <option value="Painting">Painting</option>
-            <option value="Photography">Photography</option>
-            <option value="Mixed Media">Mixed Media</option>
-            <option value="Sculpture">Sculpture</option>
-            <option value="Drawing">Drawing</option>
-            <option value="Printmaking">Printmaking</option>
-            <option value="Video">Video</option>
-            <option value="Installation">Installation</option>
-            <option value="Other">Other</option>
-          </select>
+          <div ref={dropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light cursor-pointer flex justify-between items-center group"
+            >
+              <span className={formData.mediums.length === 0 ? "text-gray-400" : "text-gray-900"}>
+                {formData.mediums.length === 0
+                  ? "Select mediums..."
+                  : formData.mediums.join(", ")}
+              </span>
+              <KeyboardArrowDownIcon
+                sx={{
+                  color: "#F26729",
+                  fontSize: 20,
+                  transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.3s ease",
+                }}
+              />
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
+                  {MEDIUM_OPTIONS.map((medium) => (
+                    <label
+                      key={medium}
+                      className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.mediums.includes(medium)}
+                        onChange={() => handleMediumToggle(medium)}
+                        disabled={
+                          !formData.mediums.includes(medium) &&
+                          formData.mediums.length >= 3
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-afh-orange cursor-pointer accent-afh-orange disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-gray-900 font-light">{medium}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <label htmlFor="medium" className="block mt-2 text-sm font-light text-gray-700">
-            Artwork Medium
+            Artwork Medium* (select up to 3)
           </label>
         </div>
 
@@ -258,10 +413,11 @@ export default function UploadPage() {
             value={formData.completionDate}
             onChange={handleChange}
             placeholder=""
-            className="w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent"
+            required
+            className={`w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.completionDate ? 'border-red-500' : ''}`}
           />
-          <label htmlFor="completionDate" className="block mt-2 text-sm font-light text-gray-700">
-            Completion Date
+          <label htmlFor="completionDate" className={`block mt-2 text-sm font-light ${errors.completionDate ? 'text-red-500' : 'text-gray-700'}`}>
+            Completion Date*
           </label>
         </div>
 
@@ -277,7 +433,7 @@ export default function UploadPage() {
             className="w-full border border-gray-300 rounded-lg focus:border-afh-orange focus:outline-none p-4 text-gray-900 bg-transparent text-base font-light placeholder-transparent resize-none"
           />
           <label htmlFor="description" className="block mt-2 text-sm font-light text-gray-700">
-            Description / Artist Statement (Optional)
+            Description / Artist Statement (optional)
           </label>
         </div>
 
@@ -285,7 +441,7 @@ export default function UploadPage() {
         <div className="w-full">
           <section 
             aria-label="File upload area"
-            className={`border-2 border-dashed rounded-lg min-h-[350px] flex flex-col items-center justify-center text-center transition-all ${getUploadBoxClasses()}`}
+            className={`border-2 border-dashed rounded-lg min-h-[350px] flex flex-col items-center justify-center text-center transition-all ${getUploadBoxClasses() }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -297,7 +453,10 @@ export default function UploadPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, file: null }))}
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, file: null }))
+                    removeErrorMessage("file")
+                  }}
                   className="text-sm text-afh-orange hover:underline"
                 >
                   Remove file
@@ -363,10 +522,10 @@ export default function UploadPage() {
         </div>
 
         {/* Error Message */}
-        {status === "error" && errorMessage && (
+        {status === "error" && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-fade-in">
             <p className="text-red-600 font-light text-base">
-              {errorMessage}
+              {getErrorMessage()}
             </p>
           </div>
         )}
