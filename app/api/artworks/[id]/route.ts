@@ -11,6 +11,16 @@ export async function GET(
 ) {
 
 
+  // TASK FOR DEV:
+  // 1. This is the public gallery.
+  // 2. Fetch the artwork (only if it's approved, else return 404 NOT FOUND)
+  // 3. Include author profile data.
+  // const artworks = await prisma.artwork.findMany({
+  //   where: { status: 'APPROVED' },
+  //   include: { author: { include: { profile: true } } },
+  //   orderBy: { created_at: 'desc' }
+  // });
+
   return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
 }
 

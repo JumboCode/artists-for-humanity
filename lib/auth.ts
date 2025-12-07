@@ -43,6 +43,18 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production', 
+      },
+    }}, 
+
   session: {
     strategy: 'jwt',
   },
@@ -63,7 +75,7 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as string
+        session.user.role = token.role as any
         session.user.username = token.username as string
       }
       return session
