@@ -66,12 +66,12 @@ export async function POST(req: Request) {
     // Check authentication
     const session = await getServerSession(authOptions)
 
-    //TODO if (!session?.user?.id) {
-    //   return NextResponse.json(
-    //     { error: 'You must be logged in to submit artwork.' },
-    //     { status: 401 }
-    //   )
-    // }
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'You must be logged in to submit artwork.' },
+        { status: 401 }
+      )
+    }
 
     // Parse data
     const data = await req.json()
@@ -199,8 +199,8 @@ export async function POST(req: Request) {
     // Prepare data for database
     const artworkData = {
       title: title.trim(),
-      image_url,
-      thumbnail_url,
+      image_url: image_url,
+      thumbnail_url: thumbnail_url,
       status: 'PENDING',
       submitted_by_name: session?.user.username || session?.user.name || 'Anonymous',
       submitted_by_email: session?.user.email || null,

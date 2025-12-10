@@ -43,12 +43,12 @@ export default function UploadPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  //TODO Redirect to login if not authenticated
-  // useEffect(() => {
-  //   if (sessionStatus === "unauthenticated") {
-  //     router.push("/login")
-  //   }
-  // }, [sessionStatus, router])
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [sessionStatus, router])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -238,10 +238,10 @@ export default function UploadPage() {
       return
     }
 
-    //TODO if (!session?.user?.id) {
-    //   addErrorMessage("session", "You must be logged in to submit artwork")
-    //   return
-    // }
+    if (!session?.user?.id) {
+      addErrorMessage("session", "You must be logged in to submit artwork")
+      return
+    }
 
     setIsSubmitting(true)
     setUploadProgress(0);
@@ -277,8 +277,8 @@ export default function UploadPage() {
           completion_date: formData.completionDate,
           //TODO image_url: imageUrl,
           image_base64: imageBase64,
-          //TODO submitted_by_name: session.user.name,
-          // submitted_by_email: session.user.email,
+          submitted_by_name: session.user.name,
+          submitted_by_email: session.user.email,
         })
       });
 
@@ -301,15 +301,15 @@ export default function UploadPage() {
     }
   }
 
-  //TODO if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <p className="text-afh-blue text-lg">
-  //         {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
-  //       </p>
-  //     </div>
-  //   )
-  // }
+  if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-afh-blue text-lg">
+          {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white px-4 sm:px-8 md:px-16 lg:px-32 py-12 sm:py-16 md:py-20">
