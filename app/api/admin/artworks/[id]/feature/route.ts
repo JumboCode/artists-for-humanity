@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma' 
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 /** 
  * An endpoint for featuring an artwork. Updates the featured field in the 'artworks' table
@@ -22,5 +24,76 @@ export async function PATCH(
   // 5. Return the relevant status code for a PATCH
   // 6. 5. Create an AdminAction: action_type='USER_EDITED', admin_id=adminId, artwork_id=id, metadata={ oldUserId: '...', newUserId: newUserId }
 
-  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
+  const session = await getServerSession(authOptions);
+    
+    // check if user is logged in
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: 'Unauthorized Action: Please Login' }, 
+        { status: 401 }
+      );
+    }
+  
+    // check if user is an admin
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Forbidden: Requires admin privileges' },
+        { status: 403 }
+      );
+    }
+  
+    // Securely get the admin ID from the session
+    const adminId = session.user.id;
+    const { id: artworkId } = (await params);
+  
+    if (!artworkId) {
+      return NextResponse.json(
+        { message: 'Artwork ID is required' },
+        { status: 400 }
+      );
+    }
+  
+    // get artwork
+
+    const body = await req.json().catch(() => ({}));
+  const newUserId = body.newUserId ?? null;
+
+  try {
+
+    // Fetch old user for metadata before any update
+    const existing = await prisma.artwork.findUnique({
+      where: { id },
+      select: { user_id: true }
+    });
+
+    const oldUserId = existing?.user_id ?? null;
+
+    const [update] = await prisma.$transaction([
+      prisma.artwork.update({
+        where: { id },
+        data: {
+          is_featured: true
+        }
+      }),
+
+      prisma.adminAction.create({
+        data: {
+          action_type: "ARTWORK_FEATURED",
+          admin_id: adminId, 
+          artwork_id: id,
+          metadata: {
+            oldUserId,
+            newUserId
+          }
+        }
+      })
+    ]);
+
+    // 3. Return updated artwork
+    return NextResponse.json({ status: 200 });
+  
+  } catch (error) {
+    console.error(error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
 }
