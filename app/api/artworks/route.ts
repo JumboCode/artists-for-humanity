@@ -8,7 +8,7 @@ async function uploadFileToStorage(file: File) {
   // TODO: Implement actual file upload to cloud storage (Cloudinary, S3, etc.)
   // For now, return mock URLs
   const timestamp = Date.now()
-  const sanitizedName = file.name.replaceAll(' ', '_')
+  const sanitizedName = file.name.replace(/\s+/g, '_')
   const publicUrl = `https://mock-storage.com/artworks/${timestamp}-${sanitizedName}`
   const thumbnailUrl = publicUrl.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '_thumb.$1')
   

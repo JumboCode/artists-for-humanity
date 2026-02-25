@@ -15,7 +15,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { newUserId } = req.body; // { "newUserId": "..." }
+  const body = await req.json();
+  const { newUserId } = body; // { "newUserId": "..." }
 
   // TASK FOR DEV:
   // 1. Validate newUserId exists and is a valid user
