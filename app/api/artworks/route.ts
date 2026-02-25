@@ -63,15 +63,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    // Check authentication
+    // Check authentication (optional - guests can upload too)
     const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'You must be logged in to submit artwork.' },
-        { status: 401 }
-      )
-    }
 
     // Parse data
     const data = await req.json()
@@ -83,8 +76,11 @@ export async function POST(req: Request) {
     // Extract optional fields
     const description = data.description as string | null
     const tools_usedString = data.tools_used as string | null
-    const completion_date = data.completion_date as string | null
     const project_type = data.project_type as string | null
+    
+    // Guest upload fields
+    const submitted_by_name = data.submitted_by_name as string | null
+    const submitted_by_email = data.submitted_by_email as string | null
 
     // Title validation
     if (!title || title.trim().length === 0) {
@@ -100,6 +96,31 @@ export async function POST(req: Request) {
       )
     }
 
+    // Guest upload validation
+    if (!session?.user?.id) {
+      // Guest uploads require artist name and email
+      if (!submitted_by_name || submitted_by_name.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Artist name is required for guest uploads.' },
+          { status: 400 }
+        )
+      }
+      if (!submitted_by_email || submitted_by_email.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Email is required for guest uploads.' },
+          { status: 400 }
+        )
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(submitted_by_email)) {
+        return NextResponse.json(
+          { error: 'Please enter a valid email address.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Get tools_used as array
     let tools_used: string[] | null = null
     if (tools_usedString && tools_usedString.trim().length > 0) {
@@ -108,20 +129,6 @@ export async function POST(req: Request) {
     if (tools_used && tools_used.length > 3) {
       return NextResponse.json(
         { error: 'You can only select up to 3 mediums.' },
-        { status: 400 }
-      )
-    }
-
-    // Completion date validation
-    if (!completion_date || completion_date.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Completion date is required.' },
-        { status: 400 }
-      )
-    }
-    if (completion_date.length > 50) {
-      return NextResponse.json(
-        { error: 'Completion date must be less than 50 characters.' },
         { status: 400 }
       )
     }
@@ -201,12 +208,16 @@ export async function POST(req: Request) {
       title: title.trim(),
       image_url: image_url,
       thumbnail_url: thumbnail_url,
-      status: 'PENDING',
-      submitted_by_name: session?.user.username || session?.user.name || 'Anonymous',
-      submitted_by_email: session?.user.email || null,
+      status: 'PENDING' as const,
+      user_id: session?.user?.id || null, // Null for guest uploads
+      submitted_by_name: session?.user?.id 
+        ? (session.user.username || session.user.name || 'Anonymous')
+        : submitted_by_name?.trim() || null,
+      submitted_by_email: session?.user?.id
+        ? (session.user.email || null)
+        : submitted_by_email?.trim() || null,
       description: description?.trim() || null,
       tools_used: tools_used || [],
-      completion_date: completion_date?.trim() || null,
       project_type: project_type || null,
       featured: false,
       view_count: 0,

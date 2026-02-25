@@ -31,8 +31,9 @@ export default function UploadPage() {
   const [formData, setFormData] = useState({
     title: "",
     mediums: [] as string[],
-    completionDate: "",
     description: "",
+    artistName: "", // For guest uploads
+    email: "", // For guest uploads
     file: null as File | null,
   })
   const [selectedFileType, setSelectedFileType] = useState<FileType>(null)
@@ -42,13 +43,6 @@ export default function UploadPage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
-      router.push("/login")
-    }
-  }, [sessionStatus, router])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -110,7 +104,7 @@ export default function UploadPage() {
   }
 
   const validate = () => {
-    const { title, description, completionDate } = formData
+    const { title, description, artistName, email } = formData
 
     // Reset error fields
     setStatus("idle")
@@ -121,9 +115,17 @@ export default function UploadPage() {
       addErrorMessage("title", "Title cannot exceed 200 characters")
     }
 
-    // Completion Date
-    if (completionDate.length > 50) {
-      addErrorMessage("completionDate", "Completion date cannot exceed 50 characters")
+    // Artist Name (required for guests)
+    if (!session && artistName.length > 200) {
+      addErrorMessage("artistName", "Artist name cannot exceed 200 characters")
+    }
+
+    // Email validation for guests
+    if (!session && email.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        addErrorMessage("email", "Please enter a valid email address")
+      }
     }
 
     // Mediums
@@ -229,18 +231,21 @@ export default function UploadPage() {
       addErrorMessage("mediums", "Please select at least one artwork medium")
       return
     }
-    if (formData.completionDate.trim() === "") {
-      addErrorMessage("completionDate", "Completion date is required")
-      return
-    }
     if (!formData.file) {
       addErrorMessage("file", "Please upload a file")
       return
     }
 
-    if (!session?.user?.id) {
-      addErrorMessage("session", "You must be logged in to submit artwork")
-      return
+    // Guest upload validation
+    if (!session) {
+      if (!formData.artistName.trim()) {
+        addErrorMessage("artistName", "Artist name is required for guest uploads")
+        return
+      }
+      if (!formData.email.trim()) {
+        addErrorMessage("email", "Email is required for guest uploads")
+        return
+      }
     }
 
     setIsSubmitting(true)
@@ -274,11 +279,9 @@ export default function UploadPage() {
           title: formData.title,
           description: formData.description,
           tools_used: formData.mediums.join(", "),
-          completion_date: formData.completionDate,
-          //TODO image_url: imageUrl,
           image_base64: imageBase64,
-          submitted_by_name: session.user.name,
-          submitted_by_email: session.user.email,
+          submitted_by_name: !session ? formData.artistName : undefined,
+          submitted_by_email: !session ? formData.email : undefined,
         })
       });
 
@@ -291,7 +294,20 @@ export default function UploadPage() {
       
       // Reset form
       setTimeout(() => {
-        router.push("/user-portal")
+        if (session) {
+          router.push("/user-portal")
+        } else {
+          // For guests, reset form and show success message
+          setFormData({
+            title: "",
+            mediums: [],
+            description: "",
+            artistName: "",
+            email: "",
+            file: null,
+          })
+          setSelectedFileType(null)
+        }
       }, 2000)
       
     } catch (error) {
@@ -301,12 +317,10 @@ export default function UploadPage() {
     }
   }
 
-  if (sessionStatus === "loading" || sessionStatus === "unauthenticated") {
+  if (sessionStatus === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-afh-blue text-lg">
-          {sessionStatus === "loading" ? "Loading..." : "Redirecting to login..."}
-        </p>
+        <p className="text-afh-blue text-lg">Loading...</p>
       </div>
     )
   }
@@ -404,22 +418,44 @@ export default function UploadPage() {
           </label>
         </div>
 
-        {/* Completion Date */}
-        <div className="w-full">
-          <input
-            type="text"
-            id="completionDate"
-            name="completionDate"
-            value={formData.completionDate}
-            onChange={handleChange}
-            placeholder=""
-            required
-            className={`w-full border-0 border-b border-gray-300 focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.completionDate ? 'border-red-500' : ''}`}
-          />
-          <label htmlFor="completionDate" className={`block mt-2 text-sm font-light ${errors.completionDate ? 'text-red-500' : 'text-gray-700'}`}>
-            Completion Date*
-          </label>
-        </div>
+        {/* Guest Upload Fields - Only show when not logged in */}
+        {!session && (
+          <>
+            {/* Artist Name */}
+            <div className="w-full">
+              <input
+                type="text"
+                id="artistName"
+                name="artistName"
+                value={formData.artistName}
+                onChange={handleChange}
+                placeholder=""
+                required
+                className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.artistName ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              <label htmlFor="artistName" className={`block mt-2 text-sm font-light ${errors.artistName ? 'text-red-500' : 'text-gray-700'}`}>
+                Artist Name* (your name)
+              </label>
+            </div>
+
+            {/* Email */}
+            <div className="w-full">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder=""
+                required
+                className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              <label htmlFor="email" className={`block mt-2 text-sm font-light ${errors.email ? 'text-red-500' : 'text-gray-700'}`}>
+                Email Address*
+              </label>
+            </div>
+          </>
+        )}
 
         {/* Description/Artist Statement */}
         <div className="w-full">
