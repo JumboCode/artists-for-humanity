@@ -265,10 +265,6 @@ export default function UploadPage() {
         uploadData.append("description", formData.description)
       }
       
-      if (formData.completionDate) {
-        uploadData.append("completion_date", formData.completionDate)
-      }
-      
       //TODO const imageUrl = await uploadToCloudinary(formData.file);
       const imageBase64 = await fileToBase64(formData.file);
 
