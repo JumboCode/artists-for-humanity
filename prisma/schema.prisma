@@ -85,9 +85,9 @@ model Artwork {
   approved_at          DateTime?
 
   // Relational Fields
-  // The artist/author who submitted it
-  author    User   @relation("ArtworkAuthor", fields: [user_id], references: [id])
-  user_id   String // Foreign key for the author
+  // The artist/author who submitted it (nullable for guest uploads)
+  author    User?   @relation("ArtworkAuthor", fields: [user_id], references: [id])
+  user_id   String? // Foreign key for the author (null for guest uploads)
   
   // The admin who approved it (nullable)
   approver     User?   @relation("ArtworkApprover", fields: [approved_by_id], references: [id])
