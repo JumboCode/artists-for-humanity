@@ -60,8 +60,16 @@ export const LoginBody = () => {
         setShowFormError(true)
         setFormErrorMessage('Invalid username or password. Please try again.')
       } else {
-        // Success! Redirect to user portal
-        router.push('/user-portal')
+        // Success! Fetch session to get user role
+        const sessionResponse = await fetch('/api/auth/session')
+        const session = await sessionResponse.json()
+        
+        // Redirect based on role
+        if (session?.user?.role === 'ADMIN') {
+          router.push('/admin')
+        } else {
+          router.push('/user-portal')
+        }
       }
     } catch (error) {
       console.error('Login error:', error)

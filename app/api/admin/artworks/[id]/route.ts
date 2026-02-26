@@ -1,27 +1,107 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma' 
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
-
-
-/** 
- * An endpoint for editing a piece of artwork. To be done by the admin only
- * 
+/**
+ * PATCH /api/admin/artworks/[id]
+ * Admin actions: approve or reject artwork
  */
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-
   const { id } = await params
-  console.log('HIT THE GET ENDPOINT. ID:', id);
-  // const adminId = "GET_FROM_SESSION_MIDDLEWARE";
+  
+  // Check if user is authenticated and is an admin
+  const session = await getServerSession(authOptions)
+  
+  if (!session || session.user.role !== 'ADMIN') {
+    return NextResponse.json(
+      { message: 'Unauthorized - Admin access required' },
+      { status: 403 }
+    )
+  }
 
-  // TASK FOR DEV:
-  // 1. Get user ID from session
-  // 2. Find the artwork by its ID
-  // 3. Make sure this is a currently logged in admin; if not, reject the request; forbidden
-  // 4. Otherwise, let the admin edit this piece of artwork
+  try {
+    const body = await req.json()
+    const { action, rejection_reason } = body
 
-  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 });
+    if (action === 'approve') {
+      // Approve the artwork using a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Update artwork status
+        const artwork = await tx.artwork.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            approved_at: new Date(),
+            approved_by_id: session.user.id,
+          },
+        })
+
+        // Log admin action
+        await tx.adminAction.create({
+          data: {
+            action_type: 'ARTWORK_APPROVED',
+            admin_id: session.user.id,
+            artwork_id: id,
+            metadata: {
+              approved_at: new Date().toISOString(),
+            },
+          },
+        })
+
+        return artwork
+      })
+
+      return NextResponse.json({
+        message: 'Artwork approved successfully',
+        artwork: result,
+      })
+    } else if (action === 'reject') {
+      // Reject the artwork using a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Update artwork status
+        const artwork = await tx.artwork.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            rejection_reason: rejection_reason || 'No reason provided',
+          },
+        })
+
+        // Log admin action
+        await tx.adminAction.create({
+          data: {
+            action_type: 'ARTWORK_REJECTED',
+            admin_id: session.user.id,
+            artwork_id: id,
+            metadata: {
+              rejection_reason: rejection_reason || 'No reason provided',
+              rejected_at: new Date().toISOString(),
+            },
+          },
+        })
+
+        return artwork
+      })
+
+      return NextResponse.json({
+        message: 'Artwork rejected successfully',
+        artwork: result,
+      })
+    } else {
+      return NextResponse.json(
+        { message: 'Invalid action. Use "approve" or "reject"' },
+        { status: 400 }
+      )
+    }
+  } catch (error) {
+    console.error('Error updating artwork:', error)
+    return NextResponse.json(
+      { message: 'Failed to update artwork' },
+      { status: 500 }
+    )
+  }
 }

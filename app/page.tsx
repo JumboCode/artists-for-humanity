@@ -121,6 +121,7 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: typeof artwork[0] }>) {
           src={art.image}
           alt={art.title}
           fill
+          priority
           style={{
             objectFit: 'cover',
             borderRadius: '8px',
