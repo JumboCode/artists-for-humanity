@@ -11,6 +11,13 @@ declare module 'next-auth' {
       id: string
       role: Role
       username: string
+      profile?: {
+        id: string
+        user_id: string
+        display_name?: string | null
+        bio?: string | null
+        profile_image_url?: string | null
+      }
     } & DefaultSession['user']
   }
 
@@ -19,6 +26,13 @@ declare module 'next-auth' {
     email: string
     username: string
     role: Role
+    profile?: {
+      id: string
+      user_id: string
+      display_name?: string | null
+      bio?: string | null
+      profile_image_url?: string | null
+    }
   }
 }
 
@@ -27,5 +41,12 @@ declare module 'next-auth/jwt' {
     id: string
     role: Role
     username: string
+    profile?: {
+      id: string
+      user_id: string
+      display_name?: string | null
+      bio?: string | null
+      profile_image_url?: string | null
+    }
   }
 }

@@ -61,7 +61,7 @@ export const LoginBody = () => {
         setFormErrorMessage('Invalid username or password. Please try again.')
       } else {
         // Success! Redirect to user portal
-        router.push('/user-portal')
+        router.push('/user-page')
       }
     } catch (error) {
       console.error('Login error:', error)

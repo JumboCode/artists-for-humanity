@@ -1,23 +1,39 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react"; 
+import { Menu, X, ChevronDown } from "lucide-react";
+import { useSession, signOut } from 'next-auth/react';
 
 const Navbar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { data: session } = useSession();
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const linkClasses = (path: string) =>
-    `px-4 py-2 text-base font-normal transition-colors duration-200 ${
+    `px-4 py-2 text-base font-medium transition-all duration-300 ${
       pathname === path
-        ? "underline decoration-2 underline-offset-4 text-black"
-        : "text-black hover:text-afh-orange"
+        ? "underline decoration-2 underline-offset-4 text-afh-blue"
+        : "text-afh-blue hover:text-afh-orange"
     }`;
 
   return (
-    <nav className="sticky top-0 z-50 bg-white">
+    <nav className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -40,16 +56,58 @@ const Navbar = () => {
             <Link href="/upload" className={linkClasses("/upload")}>
               Upload My Work
             </Link>
-            <Link href="/login" className={linkClasses("/login")}>
-              Login
-            </Link>
+            {/* Render Login if not logged in, otherwise render profile picture with dropdown */}
+            {session ? (
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center space-x-1 focus:outline-none rounded-full"
+                  aria-label="Profile menu"
+                >
+                  <Image
+                    src={session?.user?.profile?.profile_image_url || "/imgs/default-profile.png"}
+                    alt="Profile Picture"
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                  <ChevronDown size={16} className="text-afh-blue/70" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-auto min-w-[120px] bg-white rounded-lg shadow-afh-lg py-1 border border-afh-blue/10 z-50">
+                    <Link
+                      href="/user-page"
+                      className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      Go to Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        signOut({ callbackUrl: '/login' });
+                      }}
+                      className="block w-full px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/login" className={linkClasses("/login")}>
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-md text-black hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+              className="p-2 rounded-md text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange focus:outline-none transition-all duration-300"
               aria-label="Toggle menu"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -60,7 +118,7 @@ const Navbar = () => {
 
       {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="md:hidden border-t border-afh-blue/10 bg-white shadow-afh">
           <div className="px-4 pt-2 pb-3 space-y-1">
             <Link
               href="/"
@@ -76,13 +134,34 @@ const Navbar = () => {
             >
               Upload My Work
             </Link>
-            <Link
-              href="/login"
-              className={`block ${linkClasses("/login")}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Login
-            </Link>
+            {session ? (
+              <>
+                <Link
+                  href="/user-page"
+                  className={`block ${linkClasses("/user-page")}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Go to Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    signOut({ callbackUrl: '/login' });
+                  }}
+                  className="block w-full text-left px-4 py-2 text-base font-medium text-afh-blue hover:text-afh-orange transition-all duration-300"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className={`block ${linkClasses("/login")}`}
+                onClick={() => setIsOpen(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}

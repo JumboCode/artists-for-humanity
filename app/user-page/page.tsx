@@ -32,7 +32,7 @@ const initialProfile =
   year: "2029", 
   school: "Tufts University", 
   instagram: "Username01", 
-  avatar: "/imgs/user-stock.png", 
+  avatar: "/imgs/default-profile.png", 
   banner: "/imgs/profile-banner-temp.png" 
 }
 const publicArtwork = 
