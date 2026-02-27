@@ -39,34 +39,40 @@ module.exports = {
         },
         // Complementary
         'afh-white': '#FFFFFF',
-        
+
         // Semantic colors based on brand
         primary: '#F26729',
         secondary: '#313E48',
         accent: '#F26729',
         neutral: '#313E48',
-        
+
         // CSS Variables for dynamic theming
         background: 'var(--background)',
         foreground: 'var(--foreground)',
       },
-      
+
       // AFH Brand Typography
       fontFamily: {
-        'primary': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        'secondary': ['Roboto', 'Century Gothic', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        'sans': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'], // Default sans
-        'body': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        'heading': ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        primary: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        secondary: [
+          'Roboto',
+          'Century Gothic',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+        sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'], // Default sans
+        body: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      
+
       // Typography Scale
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        xs: ['0.75rem', { lineHeight: '1rem' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
@@ -76,48 +82,49 @@ module.exports = {
         '8xl': ['6rem', { lineHeight: '1' }],
         '9xl': ['8rem', { lineHeight: '1' }],
       },
-      
+
       // Font Weights (Poppins supports these)
       fontWeight: {
-        normal: '400',    // Poppins Regular
-        medium: '500',    // Poppins Medium
-        semibold: '600',  // Poppins Semibold
-        bold: '700',      // Poppins Bold
+        normal: '400', // Poppins Regular
+        medium: '500', // Poppins Medium
+        semibold: '600', // Poppins Semibold
+        bold: '700', // Poppins Bold
       },
-      
+
       // Spacing and Layout
       spacing: {
-        '18': '4.5rem',
-        '20': '5rem',
-        '88': '22rem',
-        '128': '32rem',
+        18: '4.5rem',
+        20: '5rem',
+        88: '22rem',
+        128: '32rem',
       },
-      
+
       // Border Radius
       borderRadius: {
-        'none': '0',
-        'sm': '0.125rem',
+        none: '0',
+        sm: '0.125rem',
         DEFAULT: '0.25rem',
-        'md': '0.375rem',
-        'lg': '0.5rem',
-        'xl': '0.75rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
         '2xl': '1rem',
         '3xl': '1.5rem',
-        'full': '9999px',
+        full: '9999px',
       },
-      
+
       // Box Shadow
       boxShadow: {
-        'afh': '0 4px 6px -1px rgba(49, 62, 72, 0.1), 0 2px 4px -1px rgba(49, 62, 72, 0.06)',
-        'afh-lg': '0 10px 15px -3px rgba(49, 62, 72, 0.1), 0 4px 6px -2px rgba(49, 62, 72, 0.05)',
+        afh: '0 4px 6px -1px rgba(49, 62, 72, 0.1), 0 2px 4px -1px rgba(49, 62, 72, 0.06)',
+        'afh-lg':
+          '0 10px 15px -3px rgba(49, 62, 72, 0.1), 0 4px 6px -2px rgba(49, 62, 72, 0.05)',
       },
-      
+
       // Animation and Transitions
       transitionDuration: {
-        '250': '250ms',
-        '350': '350ms',
+        250: '250ms',
+        350: '350ms',
       },
-      
+
       // Container
       container: {
         center: true,
@@ -131,8 +138,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
-  ],
+  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
 }
