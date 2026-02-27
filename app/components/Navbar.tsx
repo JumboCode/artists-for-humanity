@@ -1,17 +1,17 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown } from "lucide-react";
-import { useSession, signOut } from 'next-auth/react';
+'use client'
+import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { Menu, X, ChevronDown } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
 
 const Navbar = () => {
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { data: session } = useSession();
-  const profileRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const { data: session } = useSession()
+  const profileRef = useRef<HTMLDivElement>(null)
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -28,8 +28,8 @@ const Navbar = () => {
   const linkClasses = (path: string) =>
     `px-4 py-2 text-base font-medium transition-all duration-300 ${
       pathname === path
-        ? "underline decoration-2 underline-offset-4 text-afh-blue"
-        : "text-afh-blue hover:text-afh-orange"
+        ? 'underline decoration-2 underline-offset-4 text-afh-blue'
+        : 'text-afh-blue hover:text-afh-orange'
     }`;
 
   return (
