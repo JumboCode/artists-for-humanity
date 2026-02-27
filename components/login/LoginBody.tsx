@@ -60,8 +60,16 @@ export const LoginBody = () => {
         setShowFormError(true)
         setFormErrorMessage('Invalid username or password. Please try again.')
       } else {
-        // Success! Redirect to user portal
-        router.push('/user-portal')
+        // Success! Fetch session to get user role
+        const sessionResponse = await fetch('/api/auth/session')
+        const session = await sessionResponse.json()
+
+        // Redirect based on role
+        if (session?.user?.role === 'ADMIN') {
+          router.push('/admin')
+        } else {
+          router.push('/user-portal')
+        }
       }
     } catch (error) {
       console.error('Login error:', error)
@@ -73,7 +81,10 @@ export const LoginBody = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full w-full gap-[30px]">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col h-full w-full gap-[30px]"
+    >
       <h1 className="font-light text-3xl font-heading text-afh-blue">
         Student Portal Login
       </h1>
@@ -101,7 +112,10 @@ export const LoginBody = () => {
       </div>
 
       {showFormError && (
-        <div className="text-afh-orange font-secondary font-extralight" role="alert">
+        <div
+          className="text-afh-orange font-secondary font-extralight"
+          role="alert"
+        >
           {formErrorMessage}
         </div>
       )}

@@ -1,20 +1,20 @@
-"use client";
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react"; 
+'use client'
+import { useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { Menu, X } from 'lucide-react'
 
 const Navbar = () => {
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
 
   const linkClasses = (path: string) =>
     `px-4 py-2 text-base font-normal transition-colors duration-200 ${
       pathname === path
-        ? "underline decoration-2 underline-offset-4 text-black"
-        : "text-black hover:text-afh-orange"
-    }`;
+        ? 'underline decoration-2 underline-offset-4 text-black'
+        : 'text-black hover:text-afh-orange'
+    }`
 
   return (
     <nav className="sticky top-0 z-50 bg-white">
@@ -34,13 +34,13 @@ const Navbar = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className={linkClasses("/")}>
+            <Link href="/" className={linkClasses('/')}>
               Gallery
             </Link>
-            <Link href="/upload" className={linkClasses("/upload")}>
+            <Link href="/upload" className={linkClasses('/upload')}>
               Upload My Work
             </Link>
-            <Link href="/login" className={linkClasses("/login")}>
+            <Link href="/login" className={linkClasses('/login')}>
               Login
             </Link>
           </div>
@@ -64,21 +64,21 @@ const Navbar = () => {
           <div className="px-4 pt-2 pb-3 space-y-1">
             <Link
               href="/"
-              className={`block ${linkClasses("/")}`}
+              className={`block ${linkClasses('/')}`}
               onClick={() => setIsOpen(false)}
             >
               Gallery
             </Link>
             <Link
               href="/upload"
-              className={`block ${linkClasses("/upload")}`}
+              className={`block ${linkClasses('/upload')}`}
               onClick={() => setIsOpen(false)}
             >
               Upload My Work
             </Link>
             <Link
               href="/login"
-              className={`block ${linkClasses("/login")}`}
+              className={`block ${linkClasses('/login')}`}
               onClick={() => setIsOpen(false)}
             >
               Login
@@ -87,7 +87,7 @@ const Navbar = () => {
         </div>
       )}
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar
