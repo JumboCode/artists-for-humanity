@@ -50,10 +50,10 @@ const Navbar = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className={linkClasses("/")}>
+            <Link href="/" className={linkClasses('/')}>
               Gallery
             </Link>
-            <Link href="/upload" className={linkClasses("/upload")}>
+            <Link href="/upload" className={linkClasses('/upload')}>
               Upload My Work
             </Link>
             {/* Render Login if not logged in, otherwise render profile picture with dropdown */}
@@ -122,14 +122,14 @@ const Navbar = () => {
           <div className="px-4 pt-2 pb-3 space-y-1">
             <Link
               href="/"
-              className={`block ${linkClasses("/")}`}
+              className={`block ${linkClasses('/')}`}
               onClick={() => setIsOpen(false)}
             >
               Gallery
             </Link>
             <Link
               href="/upload"
-              className={`block ${linkClasses("/upload")}`}
+              className={`block ${linkClasses('/upload')}`}
               onClick={() => setIsOpen(false)}
             >
               Upload My Work
@@ -166,7 +166,7 @@ const Navbar = () => {
         </div>
       )}
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar

@@ -3,24 +3,22 @@
 ## 🎨 Brand Colors
 
 ### Primary Colors
+
 ```css
 /* Deep Orange - Primary Brand Color */
---afh-orange: #F26729 (R242 G104 B42)
-
-/* Blue Gray - Secondary Brand Color */  
---afh-blue: #313E48 (R49 G62 B72)
-
-/* White - Complementary Color */
---afh-white: #FFFFFF (R255 G255 B255)
+--afh-orange: #f26729 (R242 G104 B42) /* Blue Gray - Secondary Brand Color */
+  --afh-blue: #313e48 (R49 G62 B72) /* White - Complementary Color */
+  --afh-white: #ffffff (R255 G255 B255);
 ```
 
 ### TailwindCSS Usage
+
 ```jsx
 // Primary Orange
 <div className="bg-afh-orange text-white">
 <div className="text-afh-orange border-afh-orange">
 
-// Secondary Blue  
+// Secondary Blue
 <div className="bg-afh-blue text-white">
 <div className="text-afh-blue border-afh-blue">
 
@@ -30,6 +28,7 @@
 ```
 
 ### Color Variations Available
+
 - `afh-orange-50` through `afh-orange-900` (full palette)
 - `afh-blue-50` through `afh-blue-900` (full palette)
 - Opacity modifiers: `bg-afh-orange/20`, `text-afh-blue/80`
@@ -39,12 +38,14 @@
 ## 📝 Typography
 
 ### Font Hierarchy
+
 ```css
 Primary Font: Poppins (Regular 400, Medium 500, Semibold 600, Bold 700)
 Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### TailwindCSS Classes
+
 ```jsx
 // Font Families
 <div className="font-primary">   // Poppins
@@ -59,7 +60,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 
 // Font Weights
 <div className="font-normal">    // 400 - Poppins Regular
-<div className="font-medium">    // 500 - Poppins Medium  
+<div className="font-medium">    // 500 - Poppins Medium
 <div className="font-semibold">  // 600 - Poppins Semibold
 <div className="font-bold">      // 700 - Poppins Bold
 ```
@@ -69,6 +70,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## 🧩 Pre-built Components
 
 ### Buttons
+
 ```jsx
 // Primary Button (Orange)
 <button className="btn-primary">Get Started</button>
@@ -81,6 +83,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### Cards
+
 ```jsx
 // Basic Card
 <div className="card">
@@ -94,6 +97,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### Forms
+
 ```jsx
 // Form Label
 <label className="form-label">Artist Name</label>
@@ -103,6 +107,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### Layout
+
 ```jsx
 // AFH Container
 <div className="container-afh">Content with proper padding</div>
@@ -123,11 +128,12 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## 🎭 Animations & Effects
 
 ### CSS Classes Available
+
 ```jsx
 // Fade In Animation
 <div className="animate-fade-in">Fades in smoothly</div>
 
-// Slide Up Animation  
+// Slide Up Animation
 <div className="animate-slide-up">Slides up from bottom</div>
 
 // Hover Effects
@@ -135,6 +141,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### Shadows
+
 ```jsx
 <div className="shadow-afh">      // Standard AFH shadow
 <div className="shadow-afh-lg">   // Larger AFH shadow
@@ -145,6 +152,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## 🎯 Brand Utility Classes
 
 ### Quick Brand Applications
+
 ```jsx
 // Text Colors
 <span className="text-brand-primary">   // AFH Orange text
@@ -163,6 +171,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## 📐 Spacing & Layout Guidelines
 
 ### Container Sizes
+
 ```jsx
 // Responsive container with proper padding
 <div className="container-afh">
@@ -171,12 +180,14 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ```
 
 ### Section Spacing
+
 ```jsx
 // Standard section vertical padding
 <section className="section-padding"> // py-16 lg:py-24
 ```
 
 ### Custom Spacing
+
 - All standard Tailwind spacing values available
 - Additional: `spacing-18` (4.5rem), `spacing-88` (22rem), `spacing-128` (32rem)
 
@@ -185,14 +196,17 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## ♿ Accessibility Features
 
 ### Focus States
+
 - All interactive elements have AFH orange focus rings
 - `*:focus-visible { outline: 2px solid #F26729; }`
 
 ### Color Contrast
+
 - All color combinations meet WCAG AA standards
 - Text on AFH orange/blue backgrounds uses white for maximum contrast
 
 ### Typography Scale
+
 - Responsive typography that scales appropriately across devices
 - Proper line heights for readability
 
@@ -201,6 +215,7 @@ Secondary Font: Roboto, Century Gothic (fallbacks)
 ## 🚀 Usage Examples
 
 ### Complete Page Layout
+
 ```jsx
 export default function ExamplePage() {
   return (
@@ -234,18 +249,19 @@ export default function ExamplePage() {
 ```
 
 ### Form Example
+
 ```jsx
 <form className="space-y-6">
   <div>
     <label className="form-label">Artist Name</label>
     <input className="form-input" type="text" required />
   </div>
-  
+
   <div>
     <label className="form-label">Artwork Title</label>
     <input className="form-input" type="text" required />
   </div>
-  
+
   <button className="btn-primary w-full">Submit Artwork</button>
 </form>
 ```
@@ -255,13 +271,15 @@ export default function ExamplePage() {
 ## 📱 Responsive Breakpoints
 
 Using TailwindCSS default breakpoints:
+
 - `sm`: 640px and up
-- `md`: 768px and up  
+- `md`: 768px and up
 - `lg`: 1024px and up
 - `xl`: 1280px and up
 - `2xl`: 1536px and up
 
 ### Example Responsive Usage
+
 ```jsx
 <div className="text-sm md:text-base lg:text-lg">
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -273,18 +291,21 @@ Using TailwindCSS default breakpoints:
 ## 🔧 Development Notes
 
 ### Google Fonts Integration
+
 - Fonts are loaded via Next.js font optimization
 - Poppins weights: 400, 500, 600, 700
 - Automatic font display swap for performance
 
 ### CSS Variables
+
 - All brand colors available as CSS custom properties
 - Supports both light and dark theme variations
 - Easy to override for theme customization
 
 ### Component Organization
+
 - Base styles in `@layer base`
-- Component styles in `@layer components`  
+- Component styles in `@layer components`
 - Utility overrides in `@layer utilities`
 
 This setup provides a solid foundation that matches AFH brand guidelines while maintaining flexibility for development.
