@@ -6,26 +6,26 @@
 
 :root {
   /* AFH Brand Colors */
-  --afh-orange: #F26729;
-  --afh-blue: #313E48;
-  --afh-white: #FFFFFF;
-  
+  --afh-orange: #f26729;
+  --afh-blue: #313e48;
+  --afh-white: #ffffff;
+
   /* Theme Variables */
-  --background: #FFFFFF;
-  --foreground: #313E48;
-  --primary: #F26729;
-  --secondary: #313E48;
-  --accent: #F26729;
-  --muted: #F7F8F9;
-  --border: #D3D9E0;
+  --background: #ffffff;
+  --foreground: #313e48;
+  --primary: #f26729;
+  --secondary: #313e48;
+  --accent: #f26729;
+  --muted: #f7f8f9;
+  --border: #d3d9e0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1a1a1a;
-    --foreground: #FFFFFF;
-    --muted: #2A3439;
-    --border: #4C5C6D;
+    --foreground: #ffffff;
+    --muted: #2a3439;
+    --border: #4c5c6d;
   }
 }
 
@@ -33,50 +33,57 @@
   * {
     @apply border-gray-200;
   }
-  
+
   body {
     @apply bg-background text-foreground font-primary;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
-  
+
   /* Typography Hierarchy */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-primary font-semibold text-afh-blue;
   }
-  
+
   h1 {
     @apply text-4xl md:text-5xl lg:text-6xl;
   }
-  
+
   h2 {
     @apply text-3xl md:text-4xl;
   }
-  
+
   h3 {
     @apply text-2xl md:text-3xl;
   }
-  
+
   h4 {
     @apply text-xl md:text-2xl;
   }
-  
+
   h5 {
     @apply text-lg md:text-xl;
   }
-  
+
   h6 {
     @apply text-base md:text-lg;
   }
-  
+
   p {
     @apply font-primary text-base leading-relaxed;
   }
-  
+
   /* Links */
   a {
     @apply text-afh-orange hover:text-afh-orange/80 transition-colors duration-250;
   }
-  
+
   /* Focus styles for accessibility */
   *:focus-visible {
     @apply outline-2 outline-offset-2 outline-afh-orange;
@@ -88,15 +95,15 @@
   .btn-primary {
     @apply bg-afh-orange hover:bg-afh-orange/90 text-white font-medium px-6 py-3 rounded-lg transition-all duration-250 shadow-afh hover:shadow-afh-lg;
   }
-  
+
   .btn-secondary {
     @apply bg-afh-blue hover:bg-afh-blue/90 text-white font-medium px-6 py-3 rounded-lg transition-all duration-250 shadow-afh hover:shadow-afh-lg;
   }
-  
+
   .btn-outline {
     @apply border-2 border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white font-medium px-6 py-3 rounded-lg transition-all duration-250;
   }
-  
+
   /* AFH Card Component
   .card {
     @apply bg-black rounded-xl shadow-afh border border-gray-100 overflow-hidden;
@@ -106,34 +113,34 @@
   .card {
     @apply bg-black rounded-xl shadow-afh overflow-hidden;
   }
-  
+
   .card-hover {
     @apply hover:shadow-afh-lg hover:-translate-y-1 transition-all duration-350;
   }
-  
+
   /* AFH Form Components */
   .form-input {
     @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-afh-orange focus:border-afh-orange transition-colors duration-250;
   }
-  
+
   .form-label {
     @apply block text-sm font-medium text-afh-blue mb-2;
   }
-  
+
   /* AFH Layout Components */
   .container-afh {
     @apply container mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .section-padding {
     @apply py-16 lg:py-24;
   }
-  
+
   /* AFH Gallery Grid */
   .gallery-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8;
   }
-  
+
   /* AFH Hero Section */
   .hero-gradient {
     @apply bg-gradient-to-br from-afh-orange/10 to-afh-blue/10;
@@ -144,29 +151,29 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* AFH Brand Utilities */
   .text-brand-primary {
     @apply text-afh-orange;
   }
-  
+
   .text-brand-secondary {
     @apply text-afh-blue;
   }
-  
+
   .bg-brand-primary {
     @apply bg-afh-orange;
   }
-  
+
   .bg-brand-secondary {
     @apply bg-afh-blue;
   }
-  
+
   /* Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
-  
+
   .animate-slide-up {
     animation: slideUp 0.6s ease-out;
   }

@@ -12,10 +12,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  
+
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
-  
+
   if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json(
       { message: 'Unauthorized - Admin access required' },
@@ -29,7 +29,7 @@ export async function PATCH(
 
     if (action === 'approve') {
       // Approve the artwork using a transaction
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         // Update artwork status
         const artwork = await tx.artwork.update({
           where: { id },
@@ -61,7 +61,7 @@ export async function PATCH(
       })
     } else if (action === 'reject') {
       // Reject the artwork using a transaction
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         // Update artwork status
         const artwork = await tx.artwork.update({
           where: { id },

@@ -3,17 +3,20 @@
 ## 🛠️ Implemented Tech Stack
 
 ### Frontend
+
 - ✅ **React 19.2.0** - Latest React with concurrent features
 - ✅ **TypeScript 5.9.3** - Type-safe development
 - ✅ **TailwindCSS 3.x** - Utility-first CSS framework
 - ✅ **Next.js 15.5.4** - Full-stack React framework with App Router
 
 ### Backend & Database
+
 - ✅ **Neon/PostgreSQL** - Database setup ready (see .env.example)
 - ✅ **NextAuth.js 4.24.10** - Authentication system with Google OAuth
 - ✅ **Prisma 6.1.0** - Database ORM with schema models
 
 ### Development Tools
+
 - ✅ **ESLint** - Code linting with Next.js configuration
 - ✅ **Prettier** - Code formatting
 - ✅ **PostCSS & Autoprefixer** - CSS processing
@@ -47,6 +50,7 @@ AFH/
 ## 🚀 Available Scripts
 
 ### Next.js (Recommended)
+
 ```bash
 npm run dev          # Start Next.js development server (http://localhost:3000)
 npm run build        # Build for production
@@ -55,6 +59,7 @@ npm run lint         # Run ESLint
 ```
 
 ### Database Management
+
 ```bash
 npm run db:generate  # Generate Prisma client
 npm run db:push      # Push schema to database
@@ -65,6 +70,7 @@ npm run db:studio    # Open Prisma Studio GUI
 ## 🗄️ Database Schema
 
 The Prisma schema currently includes:
+
 - **NextAuth models**: User, Account, Session, VerificationToken
 - **Custom models**: Project, Application
 - **User fields**: role, bio, skills, location, timestamps
@@ -72,6 +78,7 @@ The Prisma schema currently includes:
 ## 🔐 Authentication Setup
 
 NextAuth.js is planned to be configured with:
+
 - Google OAuth provider
 - Prisma adapter for database sessions
 - JWT strategy
@@ -92,6 +99,7 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ## 🎨 Styling with TailwindCSS
 
 The app uses TailwindCSS with:
+
 - Typography plugin for rich text
 - Custom color schemes
 - Responsive design utilities

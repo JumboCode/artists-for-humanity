@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth'
 export async function GET() {
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
-  
+
   if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json(
       { message: 'Unauthorized - Admin access required' },

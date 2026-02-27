@@ -12,10 +12,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  
+
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
-  
+
   if (!session || session.user.role !== 'ADMIN') {
     return NextResponse.json(
       { message: 'Unauthorized - Admin access required' },
@@ -25,7 +25,7 @@ export async function PATCH(
 
   try {
     // Toggle featured status using a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // Get current artwork state
       const currentArtwork = await tx.artwork.findUnique({
         where: { id },
@@ -52,7 +52,9 @@ export async function PATCH(
       // Log admin action
       await tx.adminAction.create({
         data: {
-          action_type: artwork.featured ? 'ARTWORK_FEATURED' : 'ARTWORK_UNFEATURED',
+          action_type: artwork.featured
+            ? 'ARTWORK_FEATURED'
+            : 'ARTWORK_UNFEATURED',
           admin_id: session.user.id,
           artwork_id: id,
           metadata: {
@@ -66,21 +68,21 @@ export async function PATCH(
     })
 
     return NextResponse.json({
-      message: result.featured 
-        ? 'Artwork featured successfully' 
+      message: result.featured
+        ? 'Artwork featured successfully'
         : 'Artwork unfeatured successfully',
       artwork: result,
     })
   } catch (error: any) {
     console.error('Error featuring artwork:', error)
-    
+
     if (error.message === 'Artwork not found') {
       return NextResponse.json(
         { message: 'Artwork not found' },
         { status: 404 }
       )
     }
-    
+
     if (error.message === 'Only approved artworks can be featured') {
       return NextResponse.json(
         { message: 'Only approved artworks can be featured' },
