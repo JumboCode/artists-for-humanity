@@ -28,7 +28,6 @@ export function AdminDashboard() {
   // Modal states
   const [rejectingArtwork, setRejectingArtwork] = useState<Artwork | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [featuringArtwork, setFeaturingArtwork] = useState<Artwork | null>(null);
 
   useEffect(() => {
     fetchQueue();
@@ -58,11 +57,14 @@ export function AdminDashboard() {
         body: JSON.stringify({ action: 'approve' }),
       });
 
-      if (!res.ok) throw new Error('Failed to approve');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to approve');
+      }
       fetchQueue();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to approve artwork:', err);
-      alert('Failed to approve artwork. Please try again.');
+      alert(err.message || 'Failed to approve artwork. Please try again.');
     }
   }
 
@@ -84,36 +86,17 @@ export function AdminDashboard() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to reject');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to reject');
+      }
       
       setRejectingArtwork(null);
       setRejectReason('');
       fetchQueue();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to reject artwork:', err);
-      alert('Failed to reject artwork. Please try again.');
-    }
-  }
-
-  function openFeatureModal(artwork: Artwork) {
-    setFeaturingArtwork(artwork);
-  }
-
-  async function handleFeature() {
-    if (!featuringArtwork) return;
-
-    try {
-      const res = await fetch(`/api/admin/artworks/${featuringArtwork.id}/feature`, {
-        method: 'PATCH',
-      });
-
-      if (!res.ok) throw new Error('Failed to feature');
-      
-      setFeaturingArtwork(null);
-      fetchQueue();
-    } catch (err) {
-      console.error('Failed to feature artwork:', err);
-      alert('Failed to feature artwork. Please try again.');
+      alert(err.message || 'Failed to reject artwork. Please try again.');
     }
   }
 
@@ -156,7 +139,7 @@ export function AdminDashboard() {
             artwork={artwork}
             onApprove={() => handleApprove(artwork)}
             onReject={() => openRejectModal(artwork)}
-            onFeature={() => openFeatureModal(artwork)}
+            showFeatureButton={false}
           />
         ))}
       </div>
@@ -179,22 +162,6 @@ export function AdminDashboard() {
             confirmLabel="Reject"
             confirmDisabled={!rejectReason.trim()}
             confirmColor="bg-red-500 hover:bg-red-600"
-          />
-        </Modal>
-      )}
-
-      {/* Feature Modal */}
-      {featuringArtwork && (
-        <Modal onClose={() => setFeaturingArtwork(null)}>
-          <h2 className="text-xl font-heading text-afh-blue mb-4">Feature Artwork?</h2>
-          <p className="text-gray-700 font-secondary mb-6">
-            This will mark <strong>{featuringArtwork.title}</strong> as a featured artwork on the homepage.
-          </p>
-          <ModalButtons
-            onCancel={() => setFeaturingArtwork(null)}
-            onConfirm={handleFeature}
-            confirmLabel="Feature"
-            confirmColor="bg-afh-orange hover:bg-opacity-90"
           />
         </Modal>
       )}

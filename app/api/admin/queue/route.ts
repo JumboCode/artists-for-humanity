@@ -40,10 +40,10 @@ export async function GET() {
       count: pendingArtworks.length,
       artworks: pendingArtworks,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching admin queue:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch queue' },
+      { message: error.message || 'Failed to fetch queue' },
       { status: 500 }
     )
   }

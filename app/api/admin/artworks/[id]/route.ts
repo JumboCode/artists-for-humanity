@@ -97,10 +97,19 @@ export async function PATCH(
         { status: 400 }
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating artwork:', error)
+    
+    // Provide specific error messages
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { message: 'Artwork not found' },
+        { status: 404 }
+      )
+    }
+    
     return NextResponse.json(
-      { message: 'Failed to update artwork' },
+      { message: error.message || 'Failed to update artwork' },
       { status: 500 }
     )
   }
