@@ -115,8 +115,8 @@ export const SignUpBody = () => {
         setShowFormError(true)
         setFormErrorMessage('Account created, but failed to sign in. Please login manually.')
       } else {
-        // Success! Redirect to user portal
-        router.push('/user-portal')
+        // Success! Redirect to user page
+        router.push('/user-page')
       }
     } catch (error) {
       console.error('Signup error:', error)

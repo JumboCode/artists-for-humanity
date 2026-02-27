@@ -53,17 +53,18 @@ model User {
 }
 
 model Profile {
-  id                  String   @id @default(uuid())
-  user_id             String   @unique // This enforces the 1-to-1 relation
-  display_name        String?  @db.VarChar(255)
-  bio                 String?
-  profile_image_url   String?
-  department          String?  @db.VarChar(100)
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade) // Deleting a user deletes their profile
+  id                 String   @id @default(cuid())
+  user_id            String   @unique
+  display_name       String?  @db.VarChar(100)
+  bio                String?  @db.VarChar(500)
+  profile_image_url  String?
+  school             String?  @db.VarChar(200)
+  graduation_year    String?  @db.VarChar(4)
+  instagram_handle   String?  @db.VarChar(100)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Artwork {

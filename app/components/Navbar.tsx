@@ -4,11 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react"; 
+import { useSession } from "next-auth/react";
 
 const Navbar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const isAuthed = status === "authenticated";
 
+  
   const linkClasses = (path: string) =>
     `px-4 py-2 text-base font-normal transition-colors duration-200 ${
       pathname === path
@@ -40,9 +44,18 @@ const Navbar = () => {
             <Link href="/upload" className={linkClasses("/upload")}>
               Upload My Work
             </Link>
-            <Link href="/login" className={linkClasses("/login")}>
-              Login
-            </Link>
+            {isAuthed ? (
+              <Link
+                href={`/user-page/${session.user.username}`}
+                className={linkClasses(`/user-page/${session.user.username}`)}
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link href="/login" className={linkClasses("/login")}>
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,13 +89,23 @@ const Navbar = () => {
             >
               Upload My Work
             </Link>
-            <Link
-              href="/login"
-              className={`block ${linkClasses("/login")}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Login
-            </Link>
+            {isAuthed ? (
+              <Link
+                href={`/user-page/${session.user.username}`}
+                className={`block ${linkClasses(`/user-page/${session.user.username}`)}`}
+                onClick={() => setIsOpen(false)}
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className={`block ${linkClasses("/login")}`}
+                onClick={() => setIsOpen(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}

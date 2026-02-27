@@ -170,7 +170,7 @@ export default function UploadPage() {
       
       // Reset form
       setTimeout(() => {
-        router.push("/user-portal")
+        router.push("/user-page")
       }, 2000)
       
     } catch (error) {
