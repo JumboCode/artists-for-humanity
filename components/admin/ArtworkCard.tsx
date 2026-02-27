@@ -1,31 +1,43 @@
+<<<<<<< HEAD
 import Image from 'next/image';
 import { useState } from 'react';
+=======
+import Image from 'next/image'
+>>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
 type Artwork = {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string;
-  tools_used: string[];
-  project_type: string | null;
-  submitted_by_name: string | null;
-  submitted_by_email: string | null;
-  created_at: string;
+  id: string
+  title: string
+  description: string | null
+  image_url: string
+  tools_used: string[]
+  project_type: string | null
+  submitted_by_name: string | null
+  submitted_by_email: string | null
+  created_at: string
   author: {
-    username: string;
+    username: string
     profile: {
-      display_name: string | null;
-    } | null;
-  } | null;
-};
+      display_name: string | null
+    } | null
+  } | null
+}
 
 type Props = {
+<<<<<<< HEAD
   artwork: Artwork;
   onApprove: () => void;
   onReject: () => void;
   onFeature?: () => void;
   showFeatureButton?: boolean;
 };
+=======
+  artwork: Artwork
+  onApprove: () => void
+  onReject: () => void
+  onFeature: () => void
+}
+>>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
 export default function ArtworkCard({
   artwork,
@@ -35,13 +47,18 @@ export default function ArtworkCard({
   showFeatureButton = false,
 }: Props) {
   // Determine the artist name
-  const artistName = artwork.author?.profile?.display_name 
-    || artwork.author?.username 
-    || artwork.submitted_by_name 
-    || 'Guest';
+  const artistName =
+    artwork.author?.profile?.display_name ||
+    artwork.author?.username ||
+    artwork.submitted_by_name ||
+    'Guest'
 
+<<<<<<< HEAD
   const isGuestUpload = !artwork.author;
   const [imageError, setImageError] = useState(false);
+=======
+  const isGuestUpload = !artwork.author
+>>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
@@ -77,7 +94,9 @@ export default function ArtworkCard({
           </h3>
           <p className="text-sm text-gray-600 font-secondary mt-1">
             by {artistName}
-            {isGuestUpload && <span className="text-afh-orange ml-1">(Guest)</span>}
+            {isGuestUpload && (
+              <span className="text-afh-orange ml-1">(Guest)</span>
+            )}
           </p>
         </div>
 
@@ -97,12 +116,14 @@ export default function ArtworkCard({
           )}
           {artwork.tools_used && artwork.tools_used.length > 0 && (
             <p>
-              <span className="font-medium">Tools:</span> {artwork.tools_used.join(', ')}
+              <span className="font-medium">Tools:</span>{' '}
+              {artwork.tools_used.join(', ')}
             </p>
           )}
           {isGuestUpload && artwork.submitted_by_email && (
             <p>
-              <span className="font-medium">Email:</span> {artwork.submitted_by_email}
+              <span className="font-medium">Email:</span>{' '}
+              {artwork.submitted_by_email}
             </p>
           )}
           <p>
@@ -136,5 +157,5 @@ export default function ArtworkCard({
         </div>
       </div>
     </div>
-  );
+  )
 }

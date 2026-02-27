@@ -12,7 +12,7 @@ export default function AdminPage() {
   useEffect(() => {
     // Redirect non-admins
     if (status === 'loading') return
-    
+
     if (!session) {
       router.push('/login')
     } else if (session.user.role !== 'ADMIN') {
@@ -50,7 +50,7 @@ export default function AdminPage() {
 
         {/* Section divider */}
         <hr className="border-t border-gray-300 my-8" />
-        
+
         {/* Dashboard Content */}
         <AdminDashboard />
       </div>

@@ -113,7 +113,9 @@ export const SignUpBody = () => {
 
       if (signInResult?.error) {
         setShowFormError(true)
-        setFormErrorMessage('Account created, but failed to sign in. Please login manually.')
+        setFormErrorMessage(
+          'Account created, but failed to sign in. Please login manually.'
+        )
       } else {
         // Success! Redirect to user portal
         router.push('/user-portal')
@@ -122,7 +124,9 @@ export const SignUpBody = () => {
       console.error('Signup error:', error)
       setShowFormError(true)
       setFormErrorMessage(
-        error instanceof Error ? error.message : 'An error occurred during signup'
+        error instanceof Error
+          ? error.message
+          : 'An error occurred during signup'
       )
     } finally {
       setIsLoading(false)
@@ -130,7 +134,10 @@ export const SignUpBody = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full w-full gap-[30px]">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col h-full w-full gap-[30px]"
+    >
       <h1 className="font-light text-3xl font-heading text-afh-blue">
         Student Portal Sign Up
       </h1>
@@ -195,7 +202,10 @@ export const SignUpBody = () => {
       </div>
 
       {showFormError && (
-        <div className="text-afh-orange font-secondary font-extralight" role="alert">
+        <div
+          className="text-afh-orange font-secondary font-extralight"
+          role="alert"
+        >
           {formErrorMessage}
         </div>
       )}

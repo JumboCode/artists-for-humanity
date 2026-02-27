@@ -10,8 +10,11 @@ async function uploadFileToStorage(file: File) {
   const timestamp = Date.now()
   const sanitizedName = file.name.replace(/\s+/g, '_')
   const publicUrl = `https://mock-storage.com/artworks/${timestamp}-${sanitizedName}`
-  const thumbnailUrl = publicUrl.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '_thumb.$1')
-  
+  const thumbnailUrl = publicUrl.replace(
+    /\.(jpg|jpeg|png|gif|webp)$/i,
+    '_thumb.$1'
+  )
+
   return { publicUrl, thumbnailUrl }
 }
 
@@ -72,22 +75,19 @@ export async function POST(req: Request) {
     // Extract required fields
     const image_base64 = data.image_base64 as string | null
     const title = data.title as string
-    
+
     // Extract optional fields
     const description = data.description as string | null
     const tools_usedString = data.tools_used as string | null
     const project_type = data.project_type as string | null
-    
+
     // Guest upload fields
     const submitted_by_name = data.submitted_by_name as string | null
     const submitted_by_email = data.submitted_by_email as string | null
 
     // Title validation
     if (!title || title.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Title is required.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Title is required.' }, { status: 400 })
     }
     if (title.length > 200) {
       return NextResponse.json(
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     // Get tools_used as array
     let tools_used: string[] | null = null
     if (tools_usedString && tools_usedString.trim().length > 0) {
-      tools_used = tools_usedString.split(',').map((tool) => tool.trim())
+      tools_used = tools_usedString.split(',').map(tool => tool.trim())
     }
     if (tools_used && tools_used.length > 3) {
       return NextResponse.json(
@@ -143,20 +143,14 @@ export async function POST(req: Request) {
 
     // File presence validation
     if (!image_base64 || image_base64.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'File is required.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'File is required.' }, { status: 400 })
     }
 
     // Convert base64 to File object
     //TODO check if better way exists
     const matches = image_base64.match(/^data:(.+);base64,(.+)$/)
     if (!matches || matches.length !== 3) {
-      return NextResponse.json(
-        { error: 'Invalid file data.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid file data.' }, { status: 400 })
     }
     const mimeType = matches[1]
     const base64Data = matches[2]
@@ -210,11 +204,11 @@ export async function POST(req: Request) {
       thumbnail_url: thumbnail_url,
       status: 'PENDING' as const,
       user_id: session?.user?.id || null, // Null for guest uploads
-      submitted_by_name: session?.user?.id 
-        ? (session.user.username || session.user.name || 'Anonymous')
+      submitted_by_name: session?.user?.id
+        ? session.user.username || session.user.name || 'Anonymous'
         : submitted_by_name?.trim() || null,
       submitted_by_email: session?.user?.id
-        ? (session.user.email || null)
+        ? session.user.email || null
         : submitted_by_email?.trim() || null,
       description: description?.trim() || null,
       tools_used: tools_used || [],
@@ -244,6 +238,3 @@ export async function POST(req: Request) {
     )
   }
 }
-
-
-

@@ -10,7 +10,6 @@ I've completed a production-ready authentication system for the AFH Digital Arch
    - `components/common/FormField.tsx` - Generic form input with validation
    - `components/common/FormFieldWrapper.tsx` - Label and error message wrapper
    - `components/common/PasswordFormField.tsx` - Password input with show/hide toggle
-   
 2. **Complete Login System**
    - Updated `components/login/LoginBody.tsx` with NextAuth integration
    - Updated `components/login/LoginButton.tsx` with loading states
@@ -88,6 +87,7 @@ package.json - Added bcryptjs dependency
 ## ⚠️ Known Issues & Next Steps
 
 ### Database Schema Mismatch
+
 The Prisma Client generated from your schema appears to be using a different structure than expected. This is likely because:
 
 1. **PrismaAdapter Conflict**: The NextAuth Prisma Adapter expects specific table structures that don't match your custom schema
@@ -96,22 +96,26 @@ The Prisma Client generated from your schema appears to be using a different str
 ### To Make This Work:
 
 1. **Ensure Database is Running**:
+
    ```bash
    # Start your PostgreSQL database
    ```
 
 2. **Push Schema to Database**:
+
    ```bash
    npx prisma db push
    ```
 
 3. **Regenerate Prisma Client**:
+
    ```bash
    npx prisma generate
    ```
 
 4. **Verify Schema Matches**:
    The `prisma/schema.prisma` should have:
+
    ```prisma
    model User {
      id            String   @id @default(uuid())
@@ -128,6 +132,7 @@ The Prisma Client generated from your schema appears to be using a different str
    ```bash
    npm run dev
    ```
+
    - Navigate to `/sign-up`
    - Fill out the form
    - Submit and verify user creation in database
@@ -161,18 +166,21 @@ The Prisma Client generated from your schema appears to be using a different str
 ### Manual Testing (Once DB is Connected):
 
 **Signup Flow**:
+
 - [ ] Visit `/sign-up`
 - [ ] Fill all fields with valid data
 - [ ] Submit → should auto-login and redirect to `/user-portal`
 - [ ] Check database for new User and Profile records
 
 **Login Flow**:
+
 - [ ] Visit `/login`
 - [ ] Enter valid credentials
 - [ ] Submit → should redirect to `/user-portal`
 - [ ] Verify session persists on refresh
 
 **Validation Testing**:
+
 - [ ] Empty fields → show validation errors
 - [ ] Password < 8 chars → show error
 - [ ] Invalid email format → show error
@@ -180,6 +188,7 @@ The Prisma Client generated from your schema appears to be using a different str
 - [ ] Duplicate email → show 409 error
 
 **Error Handling**:
+
 - [ ] Invalid login credentials → show error message
 - [ ] Network error → graceful error display
 - [ ] Database error → generic error message (security)
@@ -212,6 +221,7 @@ From the original ticket:
 ## 💡 Future Enhancements
 
 Consider adding these features in future sprints:
+
 - [ ] Email verification on signup
 - [ ] Password reset via email
 - [ ] "Remember me" functionality
@@ -228,6 +238,7 @@ Consider adding these features in future sprints:
 ## Authentication System Implementation
 
 ### Changes
+
 - ✅ Complete login/signup forms with validation
 - ✅ NextAuth.js with Credentials Provider
 - ✅ Bcrypt password hashing
@@ -237,10 +248,12 @@ Consider adding these features in future sprints:
 - ✅ Comprehensive documentation
 
 ### New Dependencies
+
 - bcryptjs: ^2.4.3
 - @types/bcryptjs: ^2.4.6
 
 ### Testing Instructions
+
 1. Start database
 2. Run `npx prisma db push`
 3. Run `npm run dev`
@@ -249,12 +262,14 @@ Consider adding these features in future sprints:
 6. Verify session persistence
 
 ### Documentation
+
 See `/docs/AUTHENTICATION.md` for complete authentication guide.
 ```
 
 ## 🎉 Summary
 
 You now have an **industry-standard, production-ready authentication system** that:
+
 - Follows Next.js 15 best practices
 - Uses modern authentication patterns
 - Has comprehensive error handling
