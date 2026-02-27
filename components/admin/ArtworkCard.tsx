@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-import Image from 'next/image';
-import { useState } from 'react';
-=======
 import Image from 'next/image'
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
 type Artwork = {
   id: string
@@ -24,20 +19,11 @@ type Artwork = {
 }
 
 type Props = {
-<<<<<<< HEAD
-  artwork: Artwork;
-  onApprove: () => void;
-  onReject: () => void;
-  onFeature?: () => void;
-  showFeatureButton?: boolean;
-};
-=======
   artwork: Artwork
   onApprove: () => void
   onReject: () => void
   onFeature: () => void
 }
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
 export default function ArtworkCard({
   artwork,
@@ -53,12 +39,7 @@ export default function ArtworkCard({
     artwork.submitted_by_name ||
     'Guest'
 
-<<<<<<< HEAD
-  const isGuestUpload = !artwork.author;
-  const [imageError, setImageError] = useState(false);
-=======
   const isGuestUpload = !artwork.author
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
