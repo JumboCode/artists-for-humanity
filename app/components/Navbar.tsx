@@ -77,6 +77,15 @@ const Navbar = () => {
                 {/* Dropdown Menu */}
                 {isProfileOpen && (
                   <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-auto min-w-[120px] bg-white rounded-lg shadow-afh-lg py-1 border border-afh-blue/10 z-50">
+                    {session.user.role === 'ADMIN' && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <Link
                       href="/user-page"
                       className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
@@ -136,6 +145,15 @@ const Navbar = () => {
             </Link>
             {session ? (
               <>
+                {session.user.role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className={`block ${linkClasses("/admin")}`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
                 <Link
                   href="/user-page"
                   className={`block ${linkClasses("/user-page")}`}
