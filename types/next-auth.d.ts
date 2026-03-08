@@ -11,6 +11,12 @@ declare module 'next-auth' {
       id: string
       role: Role
       username: string
+      profile?: {
+        profile_image_url?: string | null
+        display_name?: string | null
+        bio?: string | null
+        department?: string | null
+      } | null
     } & DefaultSession['user']
   }
 

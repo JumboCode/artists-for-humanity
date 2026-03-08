@@ -96,7 +96,16 @@ const FALLBACK_ARTWORK = [
   },
 ]
 
-function ArtworkCarouselItem({ art }: Readonly<{ art: (typeof artwork)[0] }>) {
+// Type definition for artwork items
+type ArtworkItem = {
+  name: string
+  title: string
+  medium: string
+  year: number
+  image: string
+}
+
+function ArtworkCarouselItem({ art }: Readonly<{ art: ArtworkItem }>) {
   return (
     <Paper
       elevation={0}
@@ -188,7 +197,9 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: (typeof artwork)[0] }>) {
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [artwork, setArtwork] = useState(FALLBACK_ARTWORK)
+  const [allArtwork, setAllArtwork] = useState(FALLBACK_ARTWORK)
   const [loading, setLoading] = useState(true)
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
 
   // Fetch real artwork from API
   useEffect(() => {
@@ -212,6 +223,7 @@ export default function HomePage() {
         
         // Only update if we got artwork
         if (transformedArtwork.length > 0) {
+          setAllArtwork(transformedArtwork)
           setArtwork(transformedArtwork)
         }
       } catch (error) {
@@ -224,6 +236,36 @@ export default function HomePage() {
 
     fetchArtwork()
   }, [])
+
+  // Filter artwork based on search query and selected filter
+  useEffect(() => {
+    let filtered = allArtwork
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        art =>
+          art.name.toLowerCase().includes(query) ||
+          art.title.toLowerCase().includes(query) ||
+          art.medium.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply medium filter
+    if (selectedFilter) {
+      filtered = filtered.filter(art =>
+        art.medium.toLowerCase().includes(selectedFilter.toLowerCase())
+      )
+    }
+
+    setArtwork(filtered)
+  }, [searchQuery, selectedFilter, allArtwork])
+
+  // Get unique mediums for filter buttons
+  const uniqueMediums = Array.from(
+    new Set(allArtwork.flatMap(art => art.medium.split(',').map(m => m.trim())))
+  ).slice(0, 5) // Show top 5 mediums
 
   return (
     <div
@@ -243,41 +285,36 @@ export default function HomePage() {
             personal expression.
           </p>
           <div className="flex flex-wrap justify-start gap-3 sm:gap-4 mt-5">
-            <button
-              className="inline-flex items-center justify-center 
-                      min-w-[120px] sm:min-w-[140px]
-                      h-[40px] sm:h-[45px] px-6 py-2
-                      rounded-full border border-[#F26729] text-[#F26729] 
-                      font-secondary text-sm sm:text-base transition-colors duration-300 
-                      hover:bg-[#F26729] hover:text-white 
-                      active:bg-[#F26729] active:text-white cursor-pointer"
-            >
-              Exhibition Name
-            </button>
-
-            <button
-              className="inline-flex items-center justify-center 
-                      min-w-[120px] sm:min-w-[140px]
-                      h-[40px] sm:h-[45px] px-6 py-2
-                      rounded-full border border-[#F26729] text-[#F26729] 
-                      font-secondary text-sm sm:text-base transition-colors duration-300 
-                      hover:bg-[#F26729] hover:text-white 
-                      active:bg-[#F26729] active:text-white cursor-pointer"
-            >
-              Exhibition Name
-            </button>
-
-            <button
-              className="inline-flex items-center justify-center 
-                      min-w-[120px] sm:min-w-[140px]
-                      h-[40px] sm:h-[45px] px-6 py-2
-                      rounded-full border border-[#F26729] text-[#F26729] 
-                      font-secondary text-sm sm:text-base transition-colors duration-300 
-                      hover:bg-[#F26729] hover:text-white 
-                      active:bg-[#F26729] active:text-white cursor-pointer"
-            >
-              Exhibition Name
-            </button>
+            {uniqueMediums.map((medium) => (
+              <button
+                key={medium}
+                onClick={() => setSelectedFilter(selectedFilter === medium ? null : medium)}
+                className={`inline-flex items-center justify-center 
+                        min-w-[120px] sm:min-w-[140px]
+                        h-[40px] sm:h-[45px] px-6 py-2
+                        rounded-full border border-[#F26729] 
+                        font-secondary text-sm sm:text-base transition-colors duration-300 
+                        cursor-pointer ${
+                          selectedFilter === medium
+                            ? 'bg-[#F26729] text-white'
+                            : 'text-[#F26729] hover:bg-[#F26729] hover:text-white'
+                        }`}
+              >
+                {medium}
+              </button>
+            ))}
+            {selectedFilter && (
+              <button
+                onClick={() => setSelectedFilter(null)}
+                className="inline-flex items-center justify-center 
+                        min-w-[100px] h-[40px] sm:h-[45px] px-4 py-2
+                        rounded-full bg-gray-200 text-gray-700
+                        font-secondary text-sm sm:text-base transition-colors duration-300 
+                        hover:bg-gray-300 cursor-pointer"
+              >
+                Clear Filter
+              </button>
+            )}
           </div>
         </section>
 
@@ -286,21 +323,55 @@ export default function HomePage() {
           <Carousel
             autoPlay={true}
             animation="slide"
-            indicators={false}
-            navButtonsAlwaysVisible={true}
+            indicators={true}
+            navButtonsAlwaysVisible={false}
+            navButtonsAlwaysInvisible={true}
             cycleNavigation={true}
             swipe={true}
             interval={4000}
             duration={500}
+            indicatorIconButtonProps={{
+              style: {
+                padding: '8px',
+                color: '#D1D5DB',
+              }
+            }}
+            activeIndicatorIconButtonProps={{
+              style: {
+                color: '#F26729',
+              }
+            }}
+            indicatorContainerProps={{
+              style: {
+                marginTop: '20px',
+                textAlign: 'center',
+              }
+            }}
             sx={{
               maxWidth: 1200,
               mx: 'auto',
               px: { xs: 0, sm: 2 },
             }}
           >
-            {artwork.map(art => (
-              <ArtworkCarouselItem key={`${art.name}-${art.title}`} art={art} />
-            ))}
+            {artwork.length > 0 ? (
+              artwork.map((art, index) => (
+                <ArtworkCarouselItem key={`${art.name}-${art.title}-${index}`} art={art} />
+              ))
+            ) : (
+              <Paper
+                elevation={0}
+                sx={{
+                  mx: { xs: 1, sm: 2 },
+                  p: 4,
+                  textAlign: 'center',
+                  color: 'text.secondary',
+                }}
+              >
+                <Typography variant="h6">
+                  {loading ? 'Loading artwork...' : 'No artwork found matching your criteria'}
+                </Typography>
+              </Paper>
+            )}
           </Carousel>
         </section>
 
@@ -351,6 +422,10 @@ export default function HomePage() {
               alignItems="center"
               gap={1}
               sx={{ cursor: 'pointer' }}
+              onClick={() => {
+                // Scroll to filters
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
             >
               <FilterListIcon sx={{ color: '#000000', fontSize: '24px' }} />
               <Typography
@@ -361,59 +436,76 @@ export default function HomePage() {
                   fontSize: '16px',
                 }}
               >
-                Filter by
+                {selectedFilter ? `Filtering: ${selectedFilter}` : 'Filter by medium'}
               </Typography>
             </Box>
           </Box>
         </section>
 
+        {/* Show result count */}
+        {searchQuery && (
+          <section className="w-full mb-4">
+            <p className="text-gray-600 font-secondary text-sm">
+              Found {artwork.length} artwork{artwork.length === 1 ? '' : 's'} matching "{searchQuery}"
+            </p>
+          </section>
+        )}
+
         {/* Artwork gallery with Masonry */}
-        <Masonry
-          columns={{ xs: 1, sm: 2, lg: 3 }}
-          spacing={{ xs: 2, sm: 3 }}
-          sx={{ width: '100%', margin: '0 auto' }}
-        >
-          {artwork.map(art => (
-            <div
-              key={`${art.name}-${art.title}-gallery`}
-              className="bg-white shadow-none"
-            >
-              {/* Image Section */}
-              <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg">
-                <Image
-                  src={art.image}
-                  alt={art.title}
-                  width={600}
-                  height={800}
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    borderRadius: '8px',
-                    transition: 'transform 0.3s ease',
-                  }}
-                  className="hover:scale-105"
-                />
-              </div>
-
-              {/* Artwork info */}
-              <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-sm sm:text-base text-black mt-2 px-2">
-                {/* Left side: Artist + Title */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold">{art.name}</span>
-                  <span className="text-gray-400 font-light">|</span>
-                  <span className="text-gray-600">{art.title}</span>
+        {artwork.length > 0 ? (
+          <Masonry
+            columns={{ xs: 1, sm: 2, lg: 3 }}
+            spacing={{ xs: 2, sm: 3 }}
+            sx={{ width: '100%', margin: '0 auto' }}
+          >
+            {artwork.map((art, index) => (
+              <div
+                key={`${art.name}-${art.title}-${index}`}
+                className="bg-white shadow-none"
+              >
+                {/* Image Section */}
+                <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg">
+                  <Image
+                    src={art.image}
+                    alt={art.title}
+                    width={600}
+                    height={800}
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '8px',
+                      transition: 'transform 0.3s ease',
+                    }}
+                    className="hover:scale-105"
+                  />
                 </div>
 
-                {/* Right side: Medium + Year */}
-                <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
-                  <span>{art.medium}</span>
-                  <span className="text-gray-300">|</span>
-                  <span>{art.year}</span>
+                {/* Artwork info */}
+                <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-sm sm:text-base text-black mt-2 px-2">
+                  {/* Left side: Artist + Title */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold">{art.name}</span>
+                    <span className="text-gray-400 font-light">|</span>
+                    <span className="text-gray-600">{art.title}</span>
+                  </div>
+
+                  {/* Right side: Medium + Year */}
+                  <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
+                    <span>{art.medium}</span>
+                    <span className="text-gray-300">|</span>
+                    <span>{art.year}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </Masonry>
+            ))}
+          </Masonry>
+        ) : (
+          <div className="w-full text-center py-12">
+            <p className="text-gray-600 font-secondary text-lg">
+              No artwork found. Try adjusting your search or filters.
+            </p>
+          </div>
+        )}
 
         {/* Section line */}
         <hr className="border-t-[1px] border-gray-400 my-[60px]" />
