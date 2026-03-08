@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-// School and year options
-const schools = [
+// School suggestions (users can type any school name)
+const schoolSuggestions = [
   'Tufts University',
   'Harvard University',
   'MIT',
@@ -15,12 +15,11 @@ const schools = [
   'Emerson College',
   'UMass Boston',
   'Boston College',
-  'Other',
 ]
 
-// Generate graduation years dynamically (current year + next 4 years for students currently in college)
+// Generate graduation years dynamically (current year + next 8 years for current high school and college students)
 const currentYear = new Date().getFullYear()
-const graduationYears = Array.from({ length: 5 }, (_, i) => String(currentYear + i))
+const graduationYears = Array.from({ length: 9 }, (_, i) => String(currentYear + i))
 
 type Profile = {
   display_name: string
@@ -53,7 +52,6 @@ export default function UserPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [customSchool, setCustomSchool] = useState('')
   const [form, setForm] = useState<Profile>({
     display_name: '',
     bio: null,
@@ -115,13 +113,6 @@ export default function UserPage() {
   function openEdit() {
     if (profile) {
       setForm(profile)
-      // If school is not in predefined list, set it as custom
-      if (profile.school && !schools.includes(profile.school)) {
-        setCustomSchool(profile.school)
-        setForm({ ...profile, school: 'Other' })
-      } else {
-        setCustomSchool('')
-      }
       setIsEditing(true)
     }
   }
@@ -133,20 +124,12 @@ export default function UserPage() {
       return
     }
 
-    // Use custom school name if "Other" is selected
-    const finalSchool = form.school === 'Other' ? customSchool : form.school
-
-    if (form.school === 'Other' && !customSchool.trim()) {
-      alert('Please enter your school name')
-      return
-    }
-
     setIsSaving(true)
     try {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, school: finalSchool }),
+        body: JSON.stringify(form),
       })
 
       if (!res.ok) throw new Error('Failed to update profile')
@@ -165,7 +148,6 @@ export default function UserPage() {
 
   function cancelEdit() {
     setIsEditing(false)
-    setCustomSchool('')
     if (profile) setForm(profile)
   }
 
@@ -502,49 +484,21 @@ export default function UserPage() {
 
               <div className="flex gap-3">
                 <label className="flex-1 flex flex-col text-sm">
-                  <span className="form-label text-[13px]">School</span>
-                  <div className="relative mt-1">
-                    <select
-                      value={form.school || ''}
-                      onChange={e =>
-                        setForm({ ...form, school: e.target.value })
-                      }
-                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none w-full"
-                    >
-                      <option value="">Select a school</option>
-                      {schools.map(s => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 flex items-center">
-                      <svg
-                        className="h-4 w-4 text-black"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M6 9l6 6 6-6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  {form.school === 'Other' && (
-                    <input
-                      value={customSchool}
-                      placeholder="Enter your school or high school name"
-                      onChange={e => setCustomSchool(e.target.value)}
-                      className="mt-2 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
-                    />
-                  )}
+                  <span className="form-label text-[13px]">School / High School</span>
+                  <input
+                    list="school-suggestions"
+                    value={form.school || ''}
+                    placeholder="Type or select your school"
+                    onChange={e =>
+                      setForm({ ...form, school: e.target.value })
+                    }
+                    className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                  />
+                  <datalist id="school-suggestions">
+                    {schoolSuggestions.map(s => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </label>
                 
                 <label className="flex-1 flex flex-col text-sm">
