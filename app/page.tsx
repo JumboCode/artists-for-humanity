@@ -364,9 +364,8 @@ export default function HomePage() {
         setAllArtwork(transformedArtwork)
         // Separate featured artwork for carousel
         const featured = transformedArtwork.filter((art: ArtworkItem) => art.featured)
-        // Keep all artwork in gallery (including featured) for visibility and searchability
         setFeaturedArtwork(featured)
-        setArtwork(transformedArtwork)
+        // Note: artwork (gallery) is set by the filter useEffect based on allArtwork
       }
     } catch (error) {
       console.error('Error fetching artwork:', error)
