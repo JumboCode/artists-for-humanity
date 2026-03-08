@@ -53,12 +53,9 @@ const Navbar = () => {
             <Link href="/" className={linkClasses('/')}>
               Gallery
             </Link>
-            {/* Hide upload link for admin users */}
-            {(!session || session.user.role !== 'ADMIN') && (
-              <Link href="/upload" className={linkClasses('/upload')}>
-                Upload My Work
-              </Link>
-            )}
+            <Link href="/upload" className={linkClasses('/upload')}>
+              Upload My Work
+            </Link>
             {/* Render Login if not logged in, otherwise render profile picture with dropdown */}
             {session ? (
               <div className="relative" ref={profileRef}>
@@ -139,16 +136,13 @@ const Navbar = () => {
             >
               Gallery
             </Link>
-            {/* Hide upload link for admin users */}
-            {(!session || session.user.role !== 'ADMIN') && (
-              <Link
-                href="/upload"
-                className={`block ${linkClasses('/upload')}`}
-                onClick={() => setIsOpen(false)}
-              >
-                Upload My Work
-              </Link>
-            )}
+            <Link
+              href="/upload"
+              className={`block ${linkClasses('/upload')}`}
+              onClick={() => setIsOpen(false)}
+            >
+              Upload My Work
+            </Link>
             {session ? (
               <>
                 {session.user.role === 'ADMIN' && (
