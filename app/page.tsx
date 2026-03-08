@@ -106,6 +106,16 @@ type ArtworkItem = {
 }
 
 function ArtworkCarouselItem({ art }: Readonly<{ art: ArtworkItem }>) {
+  const [imgSrc, setImgSrc] = useState(art.image)
+  const [hasError, setHasError] = useState(false)
+
+  const handleImageError = () => {
+    if (!hasError) {
+      setHasError(true)
+      setImgSrc('/imgs/carousel1.png') // Fallback to a local placeholder
+    }
+  }
+
   return (
     <Paper
       elevation={0}
@@ -128,7 +138,7 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: ArtworkItem }>) {
         }}
       >
         <Image
-          src={art.image}
+          src={imgSrc}
           alt={art.title}
           fill
           priority
@@ -137,6 +147,8 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: ArtworkItem }>) {
             borderRadius: '8px',
           }}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+          onError={handleImageError}
+          unoptimized={imgSrc.includes('mock-storage')}
         />
       </Box>
 
@@ -191,6 +203,62 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: ArtworkItem }>) {
         </Box>
       </Box>
     </Paper>
+  )
+}
+
+// Gallery Item Component
+function GalleryArtworkItem({ art, index }: Readonly<{ art: ArtworkItem; index: number }>) {
+  const [imgSrc, setImgSrc] = useState(art.image)
+  const [imgError, setImgError] = useState(false)
+
+  const handleImageError = () => {
+    if (!imgError) {
+      setImgError(true)
+      setImgSrc('/imgs/carousel1.png')
+    }
+  }
+
+  return (
+    <div
+      key={`${art.name}-${art.title}-${index}`}
+      className="bg-white shadow-none"
+    >
+      {/* Image Section */}
+      <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg">
+        <Image
+          src={imgSrc}
+          alt={art.title}
+          width={600}
+          height={800}
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: '8px',
+            transition: 'transform 0.3s ease',
+          }}
+          className="hover:scale-105"
+          onError={handleImageError}
+          unoptimized={imgSrc.includes('mock-storage')}
+        />
+      </div>
+
+      {/* Artwork info */}
+      <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-sm sm:text-base text-black mt-2 px-2">
+        {/* Left side: Artist + Title */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold">{art.name}</span>
+          <span className="text-gray-400 font-light">|</span>
+          <span className="text-gray-600">{art.title}</span>
+        </div>
+
+        {/* Right side: Medium + Year */}
+        <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
+          <span>{art.medium}</span>
+          <span className="text-gray-300">|</span>
+          <span>{art.year}</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -459,46 +527,8 @@ export default function HomePage() {
             sx={{ width: '100%', margin: '0 auto' }}
           >
             {artwork.map((art, index) => (
-              <div
-                key={`${art.name}-${art.title}-${index}`}
-                className="bg-white shadow-none"
-              >
-                {/* Image Section */}
-                <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg">
-                  <Image
-                    src={art.image}
-                    alt={art.title}
-                    width={600}
-                    height={800}
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '8px',
-                      transition: 'transform 0.3s ease',
-                    }}
-                    className="hover:scale-105"
-                  />
-                </div>
-
-                {/* Artwork info */}
-                <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-sm sm:text-base text-black mt-2 px-2">
-                  {/* Left side: Artist + Title */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{art.name}</span>
-                    <span className="text-gray-400 font-light">|</span>
-                    <span className="text-gray-600">{art.title}</span>
-                  </div>
-
-                  {/* Right side: Medium + Year */}
-                  <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
-                    <span>{art.medium}</span>
-                    <span className="text-gray-300">|</span>
-                    <span>{art.year}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Masonry>
+              <GalleryArtworkItem key={`${art.name}-${art.title}-${index}`} art={art} index={index} />
+            ))}          </Masonry>
         ) : (
           <div className="w-full text-center py-12">
             <p className="text-gray-600 font-secondary text-lg">

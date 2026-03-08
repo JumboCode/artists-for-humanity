@@ -49,6 +49,10 @@ export async function GET() {
     const approvedArtworks = await prisma.artwork.findMany({
       where: {
         status: 'APPROVED',
+        // Exclude artwork with mock URLs
+        AND: [
+          { image_url: { not: { contains: 'mock-storage.com' } } },
+        ],
       },
       orderBy: {
         created_at: 'desc',
