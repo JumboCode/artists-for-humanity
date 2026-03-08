@@ -4,6 +4,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import cloudinary from '@/lib/cloudinary'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * Upload file to Cloudinary
  * @param base64Data - Base64 encoded file data
