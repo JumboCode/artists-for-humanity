@@ -364,10 +364,9 @@ export default function HomePage() {
         setAllArtwork(transformedArtwork)
         // Separate featured artwork for carousel
         const featured = transformedArtwork.filter((art: ArtworkItem) => art.featured)
-        const nonFeatured = transformedArtwork.filter((art: ArtworkItem) => !art.featured)
-        // Set featured and non-featured separately (no fallback to all artwork)
+        // Keep all artwork in gallery (including featured) for visibility and searchability
         setFeaturedArtwork(featured)
-        setArtwork(nonFeatured)
+        setArtwork(transformedArtwork)
       }
     } catch (error) {
       console.error('Error fetching artwork:', error)
@@ -416,8 +415,8 @@ export default function HomePage() {
 
   // Filter artwork based on search query and selected filter
   useEffect(() => {
-    // Start with non-featured artwork only
-    let filtered = allArtwork.filter(art => !art.featured)
+    // Start with all artwork (including featured)
+    let filtered = allArtwork
 
     // Apply search filter
     if (searchQuery.trim()) {
