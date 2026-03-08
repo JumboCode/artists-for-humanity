@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Carousel from 'react-material-ui-carousel'
 import Image from 'next/image'
 import Masonry from '@mui/lab/Masonry'
@@ -8,7 +8,8 @@ import { Paper, Box, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import FilterListIcon from '@mui/icons-material/FilterList'
 
-const artwork = [
+// Fallback mock data in case API fails
+const FALLBACK_ARTWORK = [
   {
     name: 'Ashley Lafortune',
     title: 'Sweet Dreams',
@@ -186,6 +187,43 @@ function ArtworkCarouselItem({ art }: Readonly<{ art: (typeof artwork)[0] }>) {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [artwork, setArtwork] = useState(FALLBACK_ARTWORK)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch real artwork from API
+  useEffect(() => {
+    const fetchArtwork = async () => {
+      try {
+        const res = await fetch('/api/artworks')
+        if (!res.ok) throw new Error('Failed to fetch artworks')
+        
+        const data = await res.json()
+        
+        // Transform API data to match the artwork format
+        const transformedArtwork = data.map((item: any) => ({
+          name: item.author?.profile?.display_name || 
+                item.submitted_by_name || 
+                'Anonymous Artist',
+          title: item.title,
+          medium: item.tools_used?.join(', ') || item.project_type || 'Mixed Media',
+          year: new Date(item.created_at).getFullYear(),
+          image: item.image_url || item.thumbnail_url,
+        }))
+        
+        // Only update if we got artwork
+        if (transformedArtwork.length > 0) {
+          setArtwork(transformedArtwork)
+        }
+      } catch (error) {
+        console.error('Error fetching artwork:', error)
+        // Keep using fallback artwork
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchArtwork()
+  }, [])
 
   return (
     <div
