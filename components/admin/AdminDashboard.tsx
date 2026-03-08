@@ -26,14 +26,9 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   // Modal states
-<<<<<<< HEAD
-  const [rejectingArtwork, setRejectingArtwork] = useState<Artwork | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-=======
   const [rejectingArtwork, setRejectingArtwork] = useState<Artwork | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [featuringArtwork, setFeaturingArtwork] = useState<Artwork | null>(null)
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
 
   useEffect(() => {
     fetchQueue()
@@ -63,22 +58,11 @@ export function AdminDashboard() {
         body: JSON.stringify({ action: 'approve' }),
       })
 
-<<<<<<< HEAD
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to approve');
-      }
-      fetchQueue();
-    } catch (err: any) {
-      console.error('Failed to approve artwork:', err);
-      alert(err.message || 'Failed to approve artwork. Please try again.');
-=======
       if (!res.ok) throw new Error('Failed to approve')
       fetchQueue()
     } catch (err) {
       console.error('Failed to approve artwork:', err)
       alert('Failed to approve artwork. Please try again.')
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
     }
   }
 
@@ -100,19 +84,6 @@ export function AdminDashboard() {
         }),
       })
 
-<<<<<<< HEAD
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to reject');
-      }
-      
-      setRejectingArtwork(null);
-      setRejectReason('');
-      fetchQueue();
-    } catch (err: any) {
-      console.error('Failed to reject artwork:', err);
-      alert(err.message || 'Failed to reject artwork. Please try again.');
-=======
       if (!res.ok) throw new Error('Failed to reject')
 
       setRejectingArtwork(null)
@@ -146,7 +117,6 @@ export function AdminDashboard() {
     } catch (err) {
       console.error('Failed to feature artwork:', err)
       alert('Failed to feature artwork. Please try again.')
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
     }
   }
 
@@ -223,8 +193,6 @@ export function AdminDashboard() {
           />
         </Modal>
       )}
-<<<<<<< HEAD
-=======
 
       {/* Feature Modal */}
       {featuringArtwork && (
@@ -244,7 +212,6 @@ export function AdminDashboard() {
           />
         </Modal>
       )}
->>>>>>> f13a88583afd9f744d856347aa31057cd59c3ff8
     </>
   )
 }
