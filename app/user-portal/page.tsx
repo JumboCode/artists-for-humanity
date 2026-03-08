@@ -41,7 +41,7 @@ type Artwork = {
 }
 
 export default function UserPortal() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const router = useRouter()
   
   const [onPublished, setOnPublished] = useState(true)
@@ -244,6 +244,10 @@ export default function UserPortal() {
       const data = await res.json()
       setProfile(data.profile)
       setIsEditing(false)
+      
+      // Refresh session to update navbar profile picture
+      await update()
+      
       alert('Profile updated successfully!')
     } catch (error) {
       console.error('Error saving profile:', error)
