@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 // School and year options
-const schools = [
+const schoolSuggestions = [
   'Tufts University',
   'Harvard University',
   'MIT',
@@ -16,7 +16,8 @@ const schools = [
   'UMass Boston',
   'Boston College',
 ]
-const graduationYears = ['2026', '2027', '2028', '2029', '2030']
+const currentYear = new Date().getFullYear()
+const graduationYears = Array.from({ length: 9 }, (_, i) => String(currentYear + i))
 
 type Profile = {
   display_name: string
@@ -640,79 +641,39 @@ export default function UserPortal() {
 
               <div className="flex gap-3">
                 <label className="flex-1 flex flex-col text-sm">
-                  <span className="form-label text-[13px]">School</span>
-                  <div className="relative mt-1">
-                    <select
-                      value={form.school || ''}
-                      onChange={e =>
-                        setForm({ ...form, school: e.target.value })
-                      }
-                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none w-full"
-                    >
-                      <option value="">Select a school</option>
-                      {schools.map(s => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 flex items-center">
-                      <svg
-                        className="h-4 w-4 text-black"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M6 9l6 6 6-6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
+                  <span className="form-label text-[13px]">School / High School</span>
+                  <input
+                    list="school-suggestions"
+                    value={form.school || ''}
+                    onChange={e =>
+                      setForm({ ...form, school: e.target.value })
+                    }
+                    placeholder="Type or select your school"
+                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1"
+                  />
+                  <datalist id="school-suggestions">
+                    {schoolSuggestions.map(s => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </label>
                 
                 <label className="flex-1 flex flex-col text-sm">
                   <span className="form-label text-[13px]">
                     Graduation Year
                   </span>
-                  <div className="relative mt-1">
-                    <select
-                      value={form.graduation_year || ''}
-                      onChange={e => setForm({ ...form, graduation_year: e.target.value })}
-                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none w-full"
-                    >
-                      <option value="">Select a year</option>
-                      {graduationYears.map(y => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 flex items-center">
-                      <svg
-                        className="h-4 w-4 text-black"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M6 9l6 6 6-6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
+                  <input
+                    list="graduation-year-suggestions"
+                    value={form.graduation_year || ''}
+                    onChange={e => setForm({ ...form, graduation_year: e.target.value })}
+                    placeholder="Type or select year"
+                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1"
+                  />
+                  <datalist id="graduation-year-suggestions">
+                    {graduationYears.map(y => (
+                      <option key={y} value={y} />
+                    ))}
+                  </datalist>
                 </label>
               </div>
 
