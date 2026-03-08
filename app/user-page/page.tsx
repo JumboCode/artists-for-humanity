@@ -15,8 +15,12 @@ const schools = [
   'Emerson College',
   'UMass Boston',
   'Boston College',
+  'Other',
 ]
-const graduationYears = ['2026', '2027', '2028', '2029', '2030']
+
+// Generate graduation years dynamically (current year + next 4 years for students currently in college)
+const currentYear = new Date().getFullYear()
+const graduationYears = Array.from({ length: 5 }, (_, i) => String(currentYear + i))
 
 type Profile = {
   display_name: string
@@ -49,6 +53,7 @@ export default function UserPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [customSchool, setCustomSchool] = useState('')
   const [form, setForm] = useState<Profile>({
     display_name: '',
     bio: null,
@@ -110,6 +115,13 @@ export default function UserPage() {
   function openEdit() {
     if (profile) {
       setForm(profile)
+      // If school is not in predefined list, set it as custom
+      if (profile.school && !schools.includes(profile.school)) {
+        setCustomSchool(profile.school)
+        setForm({ ...profile, school: 'Other' })
+      } else {
+        setCustomSchool('')
+      }
       setIsEditing(true)
     }
   }
@@ -121,12 +133,20 @@ export default function UserPage() {
       return
     }
 
+    // Use custom school name if "Other" is selected
+    const finalSchool = form.school === 'Other' ? customSchool : form.school
+
+    if (form.school === 'Other' && !customSchool.trim()) {
+      alert('Please enter your school name')
+      return
+    }
+
     setIsSaving(true)
     try {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, school: finalSchool }),
       })
 
       if (!res.ok) throw new Error('Failed to update profile')
@@ -145,6 +165,7 @@ export default function UserPage() {
 
   function cancelEdit() {
     setIsEditing(false)
+    setCustomSchool('')
     if (profile) setForm(profile)
   }
 
@@ -516,6 +537,14 @@ export default function UserPage() {
                       </svg>
                     </div>
                   </div>
+                  {form.school === 'Other' && (
+                    <input
+                      value={customSchool}
+                      placeholder="Enter your school or high school name"
+                      onChange={e => setCustomSchool(e.target.value)}
+                      className="mt-2 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                    />
+                  )}
                 </label>
                 
                 <label className="flex-1 flex flex-col text-sm">
