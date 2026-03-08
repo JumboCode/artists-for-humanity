@@ -58,7 +58,11 @@ model Profile {
   display_name        String?  @db.VarChar(255)
   bio                 String?
   profile_image_url   String?
+  banner_image_url    String?  // Header/banner background image
   department          String?  @db.VarChar(100)
+  school              String?  @db.VarChar(255)
+  graduation_year     String?  @db.VarChar(10)
+  instagram           String?  @db.VarChar(100)
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
 

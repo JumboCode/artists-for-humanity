@@ -43,6 +43,7 @@ export default function UploadPage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [countdown, setCountdown] = useState(30)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -58,6 +59,24 @@ export default function UploadPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Countdown timer for guest success message
+  useEffect(() => {
+    if (status === 'success' && !session) {
+      setCountdown(30)
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(interval)
+    }
+  }, [status, session])
 
   const addErrorMessage = (field: string, message: string) => {
     setStatus('error')
@@ -300,12 +319,15 @@ export default function UploadPage() {
 
       setStatus('success')
 
-      // Reset form
-      setTimeout(() => {
-        if (session) {
+      // Handle post-upload based on user type
+      if (session) {
+        // Redirect authenticated users after brief delay
+        setTimeout(() => {
           router.push('/user-portal')
-        } else {
-          // For guests, reset form and show success message
+        }, 1500)
+      } else {
+        // For guests, reset form after showing success message
+        setTimeout(() => {
           setFormData({
             title: '',
             mediums: [],
@@ -315,8 +337,9 @@ export default function UploadPage() {
             file: null,
           })
           setSelectedFileType(null)
-        }
-      }, 2000)
+          setStatus('idle')
+        }, 30000)
+      }
     } catch (error) {
       addErrorMessage(
         'upload',
@@ -600,9 +623,66 @@ export default function UploadPage() {
         {/* Success Message */}
         {status === 'success' && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-fade-in">
-            <p className="text-green-600 font-light text-base">
-              Artwork submitted successfully! Redirecting...
-            </p>
+            {session ? (
+              <p className="text-green-600 font-light text-base">
+                Artwork submitted successfully! Redirecting to your portal...
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-green-600 font-medium text-base">
+                      🎉 Artwork submitted successfully!
+                    </p>
+                  </div>
+                  {/* Circular countdown timer */}
+                  <div className="relative flex items-center justify-center w-12 h-12 ml-4">
+                    <svg className="transform -rotate-90" width="48" height="48">
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="#D1FAE5"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        stroke="#10B981"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 20}`}
+                        strokeDashoffset={`${2 * Math.PI * 20 * (1 - countdown / 30)}`}
+                        className="transition-all duration-1000 ease-linear"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="absolute text-sm font-semibold text-green-700">
+                      {countdown}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-gray-700 text-sm">
+                  Your submission will be reviewed by our team. Once approved, it will be featured in the gallery.
+                </p>
+                <div className="pt-2 border-t border-green-200">
+                  <p className="text-gray-800 text-sm font-medium mb-2">
+                    Want to build your portfolio and track your artwork?
+                  </p>
+                  <a
+                    href="/sign-up"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-afh-orange text-white rounded-full hover:bg-afh-orange/90 transition-colors text-sm font-medium"
+                  >
+                    Create Free Account →
+                  </a>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Creating an account allows us to link this artwork to your profile once approved.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

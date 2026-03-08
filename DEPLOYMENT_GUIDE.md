@@ -1,5 +1,25 @@
 # AFH Digital Portfolio - Deployment Guide
 
+## 🔥 Latest Updates (March 8, 2026)
+
+### Just Fixed - Artwork Upload
+✅ **Stack Overflow Error Fixed:** Replaced regex-based base64 parsing with efficient string parsing  
+✅ **Environment Variables Configured:** All credentials added to `.env.local`  
+✅ **NEXTAUTH_SECRET Generated:** Ready for production  
+✅ **Account Centralization:** All services (GitHub, Vercel, Neon, Cloudinary) use `afh.digital.art@gmail.com`
+
+**What was wrong:**
+- Regex matching on large base64 strings caused stack overflow
+- Missing Cloudinary environment variables
+
+**What we fixed:**
+- Replaced `String.match()` with `indexOf()` and `substring()` for parsing
+- Added all required environment variables
+- Generated secure NEXTAUTH_SECRET
+- Updated deployment guide with exact credentials
+
+---
+
 ## ✅ What's Been Completed (MVP Ready!)
 
 ### 🎨 **Frontend Features**
@@ -54,97 +74,188 @@
 ## 🚀 Deployment to Vercel
 
 ### Prerequisites
-- Vercel account (use `afh.digital.art@gmail.com`)
-- Cloudinary account (get credentials)
-- Neon PostgreSQL database
+✅ **AFH Organization Account:** `afh.digital.art@gmail.com`  
+✅ **Password:** `YouthArt$Studio17`  
+✅ **Cloudinary:** Already configured (credentials in `.env.local`)  
+✅ **Neon Database:** Already configured  
+✅ **GitHub:** Repository at AFH organization
 
-### Step 1: Set Up Environment Variables in Vercel
+### Important: Use AFH Organization Account, NOT Personal Account
 
-Go to your Vercel project settings → Environment Variables and add:
+**Do NOT deploy with:**
+- ❌ jpuka01 (John's personal account)
+- ❌ Lauren's personal Vercel account
+
+**DO deploy with:**
+- ✅ `afh.digital.art@gmail.com` Vercel account
+- ✅ GitHub organization: `afhdigitalart-netizen` or AFH org
+
+---
+
+### Step 1: Login to Vercel with AFH Account
+
+1. Go to [Vercel](https://vercel.com)
+2. **Log out** of any personal accounts first
+3. Click "Sign In"
+4. Use these credentials:
+   - **Email:** `afh.digital.art@gmail.com`
+   - **Password:** `YouthArt$Studio17`
+5. If asked to connect GitHub, connect the **AFH organization GitHub account** (not personal)
+
+---
+
+### Step 2: Set Up Environment Variables in Vercel
+
+Go to your Vercel project settings → Environment Variables and add these **exact values**:
 
 ```bash
-# Database
-DATABASE_URL=your_neon_postgres_url
+# Database (Neon PostgreSQL)
+DATABASE_URL=postgresql://neondb_owner:npg_AmzKtq0suiN3@ep-floral-dew-a44us8lt-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 
 # NextAuth
 NEXTAUTH_URL=https://your-domain.vercel.app
-NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
+NEXTAUTH_SECRET=6JmTwbOKCzAp5tdWsa9euhgXf8PxqvRl
 
 # Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_CLOUD_NAME=dzqbeenus
+CLOUDINARY_API_KEY=541194484279721
+CLOUDINARY_API_SECRET=mRDz9jwsAzGo0xIQw3qt8i5nFFY
 ```
 
-### Step 2: Connect GitHub Repository
+**⚠️ Important:** Change `NEXTAUTH_URL` to your actual Vercel domain after deployment (e.g., `https://afh-portfolio.vercel.app`)
 
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click "Add New Project"
-3. Import the `artists-for-humanity` GitHub repository
-4. Vercel will auto-detect Next.js settings
+---
 
-### Step 3: Configure Build Settings
+### Step 3: Connect GitHub Repository from AFH Organization
+
+### Step 3: Connect GitHub Repository from AFH Organization
+
+1. In Vercel Dashboard, click **"Add New Project"**
+2. Click **"Import Git Repository"**
+3. **Important:** Make sure you're viewing repositories from the **AFH organization**:
+   - Look for organization switcher in Vercel
+   - Select the AFH organization (not your personal repos)
+4. Find and import the **AFH** repository
+5. Vercel will auto-detect Next.js settings
+
+If you don't see the AFH organization:
+- Go to Settings → Git Integration
+- Re-authorize GitHub and grant access to the AFH organization
+
+---
+
+### Step 4: Configure Build Settings
 
 Vercel should auto-detect these, but verify:
 - **Framework Preset:** Next.js
-- **Build Command:** `npm run build`
+- **Build Command:** `npx prisma generate && npx prisma migrate deploy && next build`
 - **Output Directory:** `.next`
 - **Install Command:** `npm install`
+- **Node.js Version:** 18.x or higher
 
-### Step 4: Deploy
+**⚠️ Important:** The build command includes Prisma commands to ensure database is ready before build.
 
-1. Push your latest code to GitHub:
-   ```bash
-   git push origin main
-   ```
+---
 
-2. Vercel will automatically deploy
+### Step 5: Deploy
 
-3. Run database migrations after first deploy:
-   - You may need to run `npx prisma migrate deploy` in Vercel's terminal
-   - Or use Vercel's build command: `npx prisma migrate deploy && next build`
+1. Review all settings and environment variables
+2. Click **"Deploy"**
+3. Wait 2-5 minutes for deployment
+4. Once deployed, copy your production URL
+5. **Update `NEXTAUTH_URL`** in Vercel environment variables with your actual domain
+6. Trigger a redeployment for the change to take effect
 
-### Step 5: Verify Deployment
+### Step 6: Verify Deployment
 
-Test these pages:
-- ✅ Homepage (`/`) - Should show artwork
+Test these pages on your live site:
+- ✅ Homepage (`/`) - Should show artwork gallery
 - ✅ Login (`/login`) - Should allow sign in
 - ✅ Sign Up (`/sign-up`) - Should allow registration
-- ✅ Upload (`/upload`) - Should allow uploads
+- ✅ Upload (`/upload`) - Should allow uploads (test with small image)
 - ✅ Admin Dashboard (`/admin`) - Admins only
+
+**Test Artwork Upload:**
+1. Go to `/upload`
+2. Upload a small test image
+3. Fill in artwork details
+4. Submit
+5. Check Cloudinary dashboard - should see image in `afh/artworks/` folder
+6. Go to `/admin` to approve the artwork
+7. Refresh homepage - approved artwork should appear
+
+---
+
+## 🔐 Account Management
+
+**All services use the same AFH account for centralized management:**
+
+| Service | Account | Purpose |
+|---------|---------|---------|
+| **Gmail** | `afh.digital.art@gmail.com` | Primary contact, notifications |
+| **GitHub** | `afhdigitalart-netizen` | Code repository, version control |
+| **Vercel** | `afh.digital.art@gmail.com` | Hosting, deployments |
+| **Neon** | `afh.digital.art@gmail.com` | PostgreSQL database |
+| **Cloudinary** | `afh.digital.art@gmail.com` | Image/video storage |
+
+**Password:** `YouthArt$Studio17` (stored in `.env.local` for reference)
+
+**⚠️ Security Note:** Change this password after initial setup. Do not commit `.env.local` to GitHub (already in `.gitignore`).
 
 ---
 
 ## 🔑 Creating Admin Users
 
-After deployment, you'll need to manually set a user as admin in the database:
+After deployment, set the client's account as admin in the Neon database:
 
-### Option 1: Using Neon SQL Editor
+### Using Neon SQL Editor (Recommended)
+
+1. Go to [Neon Console](https://console.neon.tech)
+2. Login with `afh.digital.art@gmail.com`
+3. Select your database → SQL Editor
+4. Run this command to make the client an admin:
+
 ```sql
 UPDATE "User" 
 SET role = 'ADMIN' 
-WHERE email = 'your-admin-email@example.com';
+WHERE email = 'afh.digital.art@gmail.com';
 ```
 
-### Option 2: Using Prisma Studio
+5. Verify with:
+```sql
+SELECT email, role FROM "User" WHERE email = 'afh.digital.art@gmail.com';
+```
+
+### Alternative: Using Prisma Studio Locally
+
 ```bash
 npx prisma studio
-# Opens browser interface to edit database
-# Find user → Change role to ADMIN
+# Opens browser interface at http://localhost:5555
+# Navigate to User table
+# Find user with email 'afh.digital.art@gmail.com'
+# Change role field to 'ADMIN'
+# Click Save
 ```
 
 ---
 
 ## ⚙️ Cloudinary Setup
 
-1. **Get Credentials:**
-   - Go to [Cloudinary Dashboard](https://cloudinary.com/console)
-   - Copy: Cloud Name, API Key, API Secret
-   - Add to Vercel environment variables
+✅ **Already configured!** Credentials are in `.env.local` and ready to add to Vercel.
 
-2. **Test Upload:**
-   - Try uploading an image after deployment
-   - Check Cloudinary Media Library → `afh/artworks/` folder
+**Your Cloudinary Dashboard:** [https://cloudinary.com/console](https://cloudinary.com/console)
+- **Cloud Name:** `dzqbeenus`
+- **Account:** `afh.digital.art@gmail.com`
+
+**Upload Structure:**
+- All artwork uploads go to: `afh/artworks/{userId}/`
+- Automatic thumbnail generation (400x400)
+- Supports images (JPEG, PNG, GIF, WebP) and videos (MP4, WebM, MOV)
+
+**Testing Uploads:**
+1. After deployment, try uploading an image at `/upload`
+2. Check Cloudinary Media Library → Browse `afh/artworks/` folder
+3. You should see your uploaded image with auto-generated thumbnail
 
 ---
 
@@ -234,6 +345,24 @@ If you encounter issues:
 
 ## 🎉 You're Ready to Deploy!
 
-The core MVP is **complete** and **deployable**. Follow the steps above, and you should have a working beta site within 30 minutes!
+The core MVP is **complete** and **ready for production deployment**. 
 
-**Last sync:** March 7, 2026 - All critical features implemented ✅
+### Quick Deploy Checklist:
+- ✅ All environment variables configured
+- ✅ Cloudinary integration working
+- ✅ Database connected (Neon PostgreSQL)
+- ✅ Upload functionality fixed (stack overflow resolved)
+- ✅ Authentication configured with NextAuth
+- ✅ Admin dashboard functional
+- ✅ Homepage with search/filter working
+
+### Deploy Now:
+1. Login to Vercel with `afh.digital.art@gmail.com`
+2. Import AFH GitHub repository
+3. Add environment variables from Step 2
+4. Click Deploy
+5. Update `NEXTAUTH_URL` with your production domain
+6. Test artwork upload
+7. Set admin user in Neon database
+
+**Last updated:** March 8, 2026 - All critical features implemented and tested ✅

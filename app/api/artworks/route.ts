@@ -175,12 +175,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'File is required.' }, { status: 400 })
     }
 
-    // Validate base64 image data format
-    const matches = image_base64.match(/^data:(.+);base64,(.+)$/)
-    if (!matches || matches.length !== 3) {
-      return NextResponse.json({ error: 'Invalid file data.' }, { status: 400 })
+    // Validate base64 image data format - avoid regex on large strings to prevent stack overflow
+    if (!image_base64.startsWith('data:')) {
+      return NextResponse.json({ error: 'Invalid file data format.' }, { status: 400 })
     }
-    const mimeType = matches[1]
+    
+    const colonIndex = image_base64.indexOf(':')
+    const semicolonIndex = image_base64.indexOf(';')
+    const commaIndex = image_base64.indexOf(',')
+    
+    if (colonIndex === -1 || semicolonIndex === -1 || commaIndex === -1 || 
+        semicolonIndex < colonIndex || commaIndex < semicolonIndex) {
+      return NextResponse.json({ error: 'Invalid file data structure.' }, { status: 400 })
+    }
+    
+    const mimeType = image_base64.substring(colonIndex + 1, semicolonIndex)
+    const encoding = image_base64.substring(semicolonIndex + 1, commaIndex)
+    
+    if (encoding !== 'base64') {
+      return NextResponse.json({ error: 'Only base64 encoding is supported.' }, { status: 400 })
+    }
 
     // Validate file type
     const allowedTypes = [

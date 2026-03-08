@@ -1,8 +1,10 @@
 'use client'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
-// All these constants will eventually come from a database
+// School and year options
 const schools = [
   'Tufts University',
   'Harvard University',
@@ -15,87 +17,268 @@ const schools = [
   'Boston College',
 ]
 const graduationYears = ['2026', '2027', '2028', '2029', '2030']
-const initialProfile = {
-  firstName: 'John',
-  lastName: 'Doe',
-  headline: 'Graphic Designer',
-  year: '2029',
-  school: 'Tufts University',
-  instagram: 'Username01',
-  avatar: '/imgs/user-stock.png',
-  banner: '/imgs/profile-banner-temp.png',
+
+type Profile = {
+  display_name: string
+  bio: string | null
+  profile_image_url: string | null
+  banner_image_url: string | null
+  department: string | null
+  school: string | null
+  graduation_year: string | null
+  instagram: string | null
 }
-const publicArtwork = [
-  {
-    image: '/Griffin 1.jpg',
-    title: 'Griffin Artwork 1',
-    medium: 'Digital Art',
-    year: '2024',
-  },
-  {
-    image: '/Griffin 3.jpg',
-    title: 'Griffin Artwork 3',
-    medium: 'Photography',
-    year: '2024',
-  },
-  {
-    image: '/Syleah 2.png',
-    title: 'Syleah Artwork 2',
-    medium: 'Digital Design',
-    year: '2024',
-  },
-  {
-    image: '/Ashley 1.JPG',
-    title: 'Ashley Artwork 1',
-    medium: 'Mixed Media',
-    year: '2024',
-  },
-  {
-    image: '/Griffin 4.jpg',
-    title: 'Griffin Artwork 4',
-    medium: 'Digital Art',
-    year: '2024',
-  },
-]
-const privateArtwork = [
-  {
-    image: '/imgs/meow.jpg',
-    title: 'Draft Project 1',
-    medium: 'Photography',
-    year: '2024',
-  },
-  {
-    image: '/Ashley 2.JPG',
-    title: 'Draft Project 2',
-    medium: 'Illustration',
-    year: '2024',
-  },
-]
+
+type Artwork = {
+  id: string
+  title: string
+  image_url: string
+  thumbnail_url: string | null
+  tools_used: string[]
+  project_type: string | null
+  created_at: string
+}
 
 export default function UserPortal() {
-  const [onPublished, setTab] = useState(true)
-  const [profile, setProfile] = useState(initialProfile)
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  const [onPublished, setOnPublished] = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [published, setPublished] = useState<Artwork[]>([])
+  const [drafts, setDrafts] = useState<Artwork[]>([])
   const [isEditing, setIsEditing] = useState(false)
-  const [form, setForm] = useState(initialProfile)
+  const [isSaving, setIsSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
+  const [form, setForm] = useState<Profile>({
+    display_name: '',
+    bio: null,
+    profile_image_url: null,
+    banner_image_url: null,
+    department: null,
+    school: null,
+    graduation_year: null,
+    instagram: null,
+  })
 
-  function openEdit() {
-    setForm(profile)
-    setIsEditing(true)
+  // Redirect if not logged in
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login')
+    }
+  }, [status, router])
+
+  // Fetch user profile and artwork
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchProfile()
+      fetchArtwork()
+    }
+  }, [status])
+
+  async function fetchProfile() {
+    try {
+      const res = await fetch('/api/users/profile')
+      if (!res.ok) throw new Error('Failed to fetch profile')
+      const data = await res.json()
+      setProfile(data.profile || {
+        display_name: session?.user?.name || '',
+        bio: null,
+        profile_image_url: null,
+        banner_image_url: null,
+        department: null,
+        school: null,
+        graduation_year: null,
+        instagram: null,
+      })
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function saveProfile(e: React.FormEvent<HTMLFormElement>) {
-    // Don't allow saving without required fields
-    e.preventDefault()
-    if (!form.firstName || !form.lastName) return
+  async function fetchArtwork() {
+    try {
+      const res = await fetch('/api/users/artwork')
+      if (!res.ok) throw new Error('Failed to fetch artwork')
+      const data = await res.json()
+      setPublished(data.published || [])
+      setDrafts(data.drafts || [])
+    } catch (error) {
+      console.error('Error fetching artwork:', error)
+    }
+  }
 
-    // Save
-    setProfile(form)
-    setIsEditing(false)
+  function openEdit() {
+    if (profile) {
+      setForm(profile)
+      setImagePreview(profile.profile_image_url)
+      setBannerPreview(profile.banner_image_url)
+      setIsEditing(true)
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB')
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      // Create FormData for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'afh-upload')
+      formData.append('folder', 'profile-images')
+
+      // Upload to Cloudinary
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to upload image')
+
+      const data = await response.json()
+      const imageUrl = data.secure_url
+
+      // Update form state and preview
+      setForm({ ...form, profile_image_url: imageUrl })
+      setImagePreview(imageUrl)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  async function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB')
+      return
+    }
+
+    setUploadingBanner(true)
+
+    try {
+      // Create FormData for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'afh-upload')
+      formData.append('folder', 'banner-images')
+
+      // Upload to Cloudinary
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to upload banner')
+
+      const data = await response.json()
+      const imageUrl = data.secure_url
+
+      // Update form state and preview
+      setForm({ ...form, banner_image_url: imageUrl })
+      setBannerPreview(imageUrl)
+    } catch (error) {
+      console.error('Error uploading banner:', error)
+      alert('Failed to upload banner. Please try again.')
+    } finally {
+      setUploadingBanner(false)
+    }
+  }
+
+  async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!form.display_name.trim()) {
+      alert('Display name is required')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+
+      if (!res.ok) throw new Error('Failed to update profile')
+
+      const data = await res.json()
+      setProfile(data.profile)
+      setIsEditing(false)
+      alert('Profile updated successfully!')
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      alert('Failed to save profile. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   function cancelEdit() {
     setIsEditing(false)
-    setForm(profile)
+    setImagePreview(null)
+    setBannerPreview(null)
+    if (profile) setForm(profile)
+  }
+
+  function navigateToUpload() {
+    router.push('/upload')
+  }
+
+  const displayName = profile?.display_name || session?.user?.name || 'User'
+
+  if (loading || status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600 font-secondary">Loading profile...</p>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-600 font-secondary">Failed to load profile</p>
+      </div>
+    )
   }
 
   return (
@@ -103,7 +286,7 @@ export default function UserPortal() {
       {/* 🔸 FULL-WIDTH HERO IMAGE */}
       <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
         <Image
-          src={profile.banner}
+          src={profile.banner_image_url || '/imgs/profile-banner-temp.png'}
           alt="Banner Image"
           className="w-full h-[30vh] object-cover"
           width={1200}
@@ -118,7 +301,7 @@ export default function UserPortal() {
           <div className="flex flex-col">
             <div className="w-[100px] h-[100px] rounded-full overflow-hidden border-4 border-white bg-white">
               <Image
-                src={profile.avatar}
+                src={profile.profile_image_url || '/imgs/user-stock.png'}
                 alt="user profile picture"
                 width={100}
                 height={100}
@@ -127,51 +310,58 @@ export default function UserPortal() {
             </div>
 
             <p className="font-primary text-[40px] font-light">
-              {profile.firstName} {profile.lastName}
+              {displayName}
             </p>
           </div>
 
           {/* Other user info */}
           <div className="flex flex-col gap-2 justify-start font-secondary font-light text-[16px]">
-            {/* title */}
-            <div className="flex items-center gap-2.5">
-              <svg
-                width="22"
-                height="15"
-                viewBox="0 0 19 15"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12.0714 3.04545C12.0714 3.04545 12.0714 0.5 9.5 0.5C6.92857 0.5 6.92857 3.04545 6.92857 3.04545M4.35714 14.5V3.04545M14.6429 14.5V3.04545M18.5 3.04545H0.5V14.5H18.5V3.04545Z"
-                  stroke="black"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <p>{profile.headline}</p>
-            </div>
-            {/* year @ school */}
-            <div className="flex items-center gap-2.5">
-              <svg
-                width="22"
-                height="18"
-                viewBox="0 0 22 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M18.9933 13.6822V7.16552L10.8115 11.7933L0.811523 6.12663L10.8115 0.459961L20.8115 6.12663V13.6822H18.9933ZM10.8115 17.46L4.44789 13.8711V9.14885L10.8115 12.7377L17.1752 9.14885V13.8711L10.8115 17.46Z"
-                  stroke="#313E48"
-                  strokeWidth="0.8"
-                />
-              </svg>
-              <p>
-                {profile.school} {profile.year}
-              </p>
-            </div>
-            {/* instagram */}
-            <div className="flex items-center gap-2.5">
+            {/* Bio/Department */}
+            {(profile.bio || profile.department) && (
+              <div className="flex items-center gap-2.5">
+                <svg
+                  width="22"
+                  height="15"
+                  viewBox="0 0 19 15"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.0714 3.04545C12.0714 3.04545 12.0714 0.5 9.5 0.5C6.92857 0.5 6.92857 3.04545 6.92857 3.04545M4.35714 14.5V3.04545M14.6429 14.5V3.04545M18.5 3.04545H0.5V14.5H18.5V3.04545Z"
+                    stroke="black"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <p>{profile.department || profile.bio}</p>
+              </div>
+            )}
+            
+            {/* School & Year */}
+            {(profile.school || profile.graduation_year) && (
+              <div className="flex items-center gap-2.5">
+                <svg
+                  width="22"
+                  height="18"
+                  viewBox="0 0 22 18"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18.9933 13.6822V7.16552L10.8115 11.7933L0.811523 6.12663L10.8115 0.459961L20.8115 6.12663V13.6822H18.9933ZM10.8115 17.46L4.44789 13.8711V9.14885L10.8115 12.7377L17.1752 9.14885V13.8711L10.8115 17.46Z"
+                    stroke="#313E48"
+                    strokeWidth="0.8"
+                  />
+                </svg>
+                <p>
+                  {profile.school && profile.graduation_year ? `${profile.school} ${profile.graduation_year}` : profile.school || profile.graduation_year}
+                </p>
+              </div>
+            )}
+            
+            {/* Instagram */}
+            {profile.instagram && (
+              <div className="flex items-center gap-2.5">
               <svg
                 width="22"
                 height="20"
@@ -186,73 +376,81 @@ export default function UserPortal() {
                   strokeWidth="0.5"
                 />
               </svg>
-              <a href={`https://instagram.com/${profile.instagram}`}>
+              <a href={`https://instagram.com/${profile.instagram}`} className="hover:text-afh-orange">
                 {profile.instagram}
               </a>
             </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-[20px] max-md:items-center">
             <button
               onClick={openEdit}
-              className="border-[1px] max-w-[169px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start"
+              className="border-[1px] max-w-[169px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
             >
-              {' '}
-              Edit Profile Info{' '}
+              Edit Profile Info
             </button>
-            <button className="border-[1px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start">
+            <button 
+              onClick={navigateToUpload}
+              className="border-[1px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
+            >
               Upload a New Project
             </button>
           </div>
         </div>
 
-        {/* Galery Section */}
+        {/* Gallery Section */}
         <div className="afh-section galery-section w-[70%] md:w-[55%] max-md:w-full max-md:items-center -translate-y-[30px] section-padding flex flex-col gap-[40px]">
           <div className="flex gap-[25px] w-full border-b-2 h-auto">
             <button
               className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-black' : 'border-transparent'}`}
-              onClick={() => setTab(true)}
+              onClick={() => setOnPublished(true)}
             >
-              {' '}
-              Published{' '}
+              Published
             </button>
             <button
               className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-transparent' : 'border-black'}`}
-              onClick={() => setTab(false)}
+              onClick={() => setOnPublished(false)}
             >
-              {' '}
-              Drafts{' '}
+              Drafts
             </button>
           </div>
           {onPublished && (
             <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary">
-              {publicArtwork.map(art => (
-                <div
-                  key={art.title}
-                  className="card card-hover bg-white flex flex-col gap-[10px]"
-                >
-                  <Image
-                    src={art.image}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    alt={`your published artwork, titled ${art.title}`}
-                    width={600}
-                    height={600}
-                  />
-                  <div className="p-2 flex flex-col gap-1">
-                    <p className="font-medium text-[14px]">{art.title}</p>
-                    <p className="text-[12px] text-gray-600">
-                      {art.medium}, {art.year}
-                    </p>
+              {published.length > 0 ? (
+                published.map(art => (
+                  <div
+                    key={art.id}
+                    className="card card-hover bg-white flex flex-col gap-[10px]"
+                  >
+                    <Image
+                      src={art.thumbnail_url || art.image_url}
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      alt={art.title}
+                      width={600}
+                      height={600}
+                    />
+                    <div className="p-2 flex flex-col gap-1">
+                      <p className="font-medium text-[14px]">{art.title}</p>
+                      <p className="text-[12px] text-gray-600">
+                        {art.tools_used.join(', ') || art.project_type || 'Artwork'}
+                      </p>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12">
+                  <p className="text-gray-500 font-secondary">No published artwork yet</p>
                 </div>
-              ))}
+              )}
             </div>
           )}
           {!onPublished && (
-            <div className=" gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
-              <div
+            <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
+              <button
                 key="addNew"
-                className="min-h-[300px] card card-hover bg-white flex flex-col items-center justify-center gap-[20px] border-[2px] border-afh-orange"
+                onClick={navigateToUpload}
+                className="min-h-[300px] card card-hover bg-white flex flex-col items-center justify-center gap-[20px] border-[2px] border-afh-orange cursor-pointer"
               >
                 <button className="w-[88px] h-[88px] rounded-full bg-afh-orange/25 flex items-center justify-center text-afh-orange">
                   <svg
@@ -268,27 +466,27 @@ export default function UserPortal() {
                     />
                   </svg>
                 </button>
-                <button className="text-[20px] lg:text-[12px] md:text-[15px] max-md:text-[15px] btn-outline border-[1px] rounded-full font-primary font-light inline-flex justify-start">
-                  {' '}
+                <button className="text-[20px] lg:text-[12px] md:text-[15px] max-md:text-[15px] btn-outline border-[1px] rounded-full font-primary font-light inline-flex justify-start px-4 py-2">
                   + Upload New Project
                 </button>
-              </div>
-              {privateArtwork.map(art => (
+              </button>
+              
+              {drafts.map(art => (
                 <div
-                  key={art.title}
+                  key={art.id}
                   className="card card-hover bg-white flex flex-col gap-[10px]"
                 >
                   <Image
-                    src={art.image}
+                    src={art.thumbnail_url || art.image_url}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    alt={`your draft titled ${art.title}`}
+                    alt={art.title}
                     width={600}
                     height={600}
                   />
                   <div className="p-2 flex flex-col gap-1">
                     <p className="font-medium text-[14px]">{art.title}</p>
                     <p className="text-[12px] text-gray-600">
-                      {art.medium}, {art.year}
+                      {art.tools_used.join(', ') || art.project_type || 'Artwork'}
                     </p>
                   </div>
                 </div>
@@ -300,15 +498,14 @@ export default function UserPortal() {
 
       {/* Edit modal */}
       {isEditing && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="absolute inset-0 bg-black/50 animate-fade-in"
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 animate-fade-in cursor-default"
             onClick={cancelEdit}
+            onKeyDown={(e) => e.key === 'Escape' && cancelEdit()}
             style={{ animationDuration: '200ms' }}
+            aria-label="Close modal overlay"
           />
           <form
             onSubmit={saveProfile}
@@ -356,48 +553,87 @@ export default function UserPortal() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-4">
-              <div className="flex gap-3">
-                <label className="flex-1 flex flex-col text-sm">
-                  <span
-                    className={`form-label text-[13px] ${!form.firstName ? 'text-red-500' : ''}`}
-                  >
-                    First name*
-                  </span>
-                  <input
-                    value={form.firstName}
-                    placeholder="First name"
-                    onChange={e =>
-                      setForm({ ...form, firstName: e.target.value })
-                    }
-                    className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
-                    aria-required="true"
+              {/* Banner Image Upload */}
+              <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30">
+                <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                  <Image
+                    src={bannerPreview || form.banner_image_url || '/imgs/profile-banner-temp.png'}
+                    alt="Banner preview"
+                    fill
+                    className="object-cover"
                   />
-                </label>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <label className="cursor-pointer px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm font-secondary">
+                    {uploadingBanner ? 'Uploading...' : 'Upload Header Banner'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={uploadingBanner}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500">Recommended: 1200x300px • Max 10MB</p>
+                </div>
+              </div>
 
-                <label className="flex-1 flex flex-col text-sm">
-                  <span
-                    className={`form-label text-[13px] ${!form.lastName ? 'text-red-500' : ''}`}
-                  >
-                    Last name*
-                  </span>
-                  <input
-                    value={form.lastName}
-                    placeholder="Last name"
-                    onChange={e =>
-                      setForm({ ...form, lastName: e.target.value })
-                    }
-                    className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
-                    aria-required="true"
+              {/* Profile Picture Upload */}
+              <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100">
+                  <Image
+                    src={imagePreview || form.profile_image_url || '/imgs/user-stock.png'}
+                    alt="Profile preview"
+                    fill
+                    className="object-cover"
                   />
-                </label>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <label className="cursor-pointer px-4 py-2 bg-afh-orange text-white rounded-full hover:bg-afh-orange/90 transition-colors text-sm font-secondary">
+                    {uploadingImage ? 'Uploading...' : 'Upload Profile Picture'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500">Max 10MB • JPG, PNG, or GIF</p>
+                </div>
               </div>
 
               <label className="flex flex-col text-sm">
-                <span className="form-label text-[13px]">Headline</span>
+                <span className={`form-label text-[13px] ${form.display_name ? '' : 'text-red-500'}`}>
+                  Display Name*
+                </span>
                 <input
-                  value={form.headline}
+                  value={form.display_name}
+                  placeholder="Your full name"
+                  onChange={e =>
+                    setForm({ ...form, display_name: e.target.value })
+                  }
+                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                  required
+                />
+              </label>
+
+              <label className="flex flex-col text-sm">
+                <span className="form-label text-[13px]">Bio/Headline</span>
+                <textarea
+                  value={form.bio || ''}
+                  placeholder="Tell us about yourself..."
+                  onChange={e => setForm({ ...form, bio: e.target.value })}
+                  className="mt-1 form-input rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 py-2 min-h-[80px]"
+                />
+              </label>
+
+              <label className="flex flex-col text-sm">
+                <span className="form-label text-[13px]">Department/Title</span>
+                <input
+                  value={form.department || ''}
                   placeholder="Graphic Designer"
-                  onChange={e => setForm({ ...form, headline: e.target.value })}
+                  onChange={e => setForm({ ...form, department: e.target.value })}
                   className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
                 />
               </label>
@@ -407,23 +643,18 @@ export default function UserPortal() {
                   <span className="form-label text-[13px]">School</span>
                   <div className="relative mt-1">
                     <select
-                      value={form.school}
+                      value={form.school || ''}
                       onChange={e =>
                         setForm({ ...form, school: e.target.value })
                       }
-                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none bg-none [-moz-appearance:none] [-webkit-appearance:none] leading-[1.5]"
+                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none w-full"
                     >
-                      <option value="" disabled>
-                        Select a school
-                      </option>
+                      <option value="">Select a school</option>
                       {schools.map(s => (
                         <option key={s} value={s}>
                           {s}
                         </option>
                       ))}
-                      {!schools.includes(form.school) && form.school && (
-                        <option value={form.school}>{form.school}</option>
-                      )}
                     </select>
                     <div className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 flex items-center">
                       <svg
@@ -433,7 +664,6 @@ export default function UserPortal() {
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden
                       >
                         <path
                           d="M6 9l6 6 6-6"
@@ -446,19 +676,18 @@ export default function UserPortal() {
                     </div>
                   </div>
                 </label>
+                
                 <label className="flex-1 flex flex-col text-sm">
                   <span className="form-label text-[13px]">
                     Graduation Year
                   </span>
                   <div className="relative mt-1">
                     <select
-                      value={form.year}
-                      onChange={e => setForm({ ...form, year: e.target.value })}
-                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none bg-none [-moz-appearance:none] [-webkit-appearance:none]"
+                      value={form.graduation_year || ''}
+                      onChange={e => setForm({ ...form, graduation_year: e.target.value })}
+                      className="form-input h-11 rounded-md border border-gray-200 pl-3 pr-10 bg-white appearance-none w-full"
                     >
-                      <option value="" disabled>
-                        Select a year
-                      </option>
+                      <option value="">Select a year</option>
                       {graduationYears.map(y => (
                         <option key={y} value={y}>
                           {y}
@@ -473,7 +702,6 @@ export default function UserPortal() {
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden
                       >
                         <path
                           d="M6 9l6 6 6-6"
@@ -493,7 +721,7 @@ export default function UserPortal() {
                   Instagram Username
                 </span>
                 <input
-                  value={form.instagram}
+                  value={form.instagram || ''}
                   placeholder="afhboston"
                   onChange={e =>
                     setForm({ ...form, instagram: e.target.value })
@@ -505,11 +733,18 @@ export default function UserPortal() {
 
             <div className="mt-6 flex justify-end gap-3">
               <button
-                type="submit"
-                aria-label="Save changes"
-                className="px-5 py-2.5 rounded-full font-primary bg-white text-afh-orange border-2 border-afh-orange hover:bg-afh-orange hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                type="button"
+                onClick={cancelEdit}
+                className="px-5 py-2.5 rounded-full font-primary bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 transition-colors duration-150"
               >
-                Save Changes
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-5 py-2.5 rounded-full font-primary bg-afh-orange text-white border-2 border-afh-orange hover:bg-afh-orange/90 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>

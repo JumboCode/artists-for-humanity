@@ -120,6 +120,15 @@ module.exports = {
       },
 
       // Animation and Transitions
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-in',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+      },
       transitionDuration: {
         250: '250ms',
         350: '350ms',

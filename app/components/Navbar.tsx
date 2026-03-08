@@ -53,9 +53,12 @@ const Navbar = () => {
             <Link href="/" className={linkClasses('/')}>
               Gallery
             </Link>
-            <Link href="/upload" className={linkClasses('/upload')}>
-              Upload My Work
-            </Link>
+            {/* Hide upload link for admin users */}
+            {(!session || session.user.role !== 'ADMIN') && (
+              <Link href="/upload" className={linkClasses('/upload')}>
+                Upload My Work
+              </Link>
+            )}
             {/* Render Login if not logged in, otherwise render profile picture with dropdown */}
             {session ? (
               <div className="relative" ref={profileRef}>
@@ -87,7 +90,7 @@ const Navbar = () => {
                       </Link>
                     )}
                     <Link
-                      href="/user-page"
+                      href="/user-portal"
                       className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
                       onClick={() => setIsProfileOpen(false)}
                     >
@@ -136,13 +139,16 @@ const Navbar = () => {
             >
               Gallery
             </Link>
-            <Link
-              href="/upload"
-              className={`block ${linkClasses('/upload')}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Upload My Work
-            </Link>
+            {/* Hide upload link for admin users */}
+            {(!session || session.user.role !== 'ADMIN') && (
+              <Link
+                href="/upload"
+                className={`block ${linkClasses('/upload')}`}
+                onClick={() => setIsOpen(false)}
+              >
+                Upload My Work
+              </Link>
+            )}
             {session ? (
               <>
                 {session.user.role === 'ADMIN' && (
@@ -155,8 +161,8 @@ const Navbar = () => {
                   </Link>
                 )}
                 <Link
-                  href="/user-page"
-                  className={`block ${linkClasses("/user-page")}`}
+                  href="/user-portal"
+                  className={`block ${linkClasses("/user-portal")}`}
                   onClick={() => setIsOpen(false)}
                 >
                   Go to Profile

@@ -166,3 +166,58 @@ export async function PATCH(
     )
   }
 }
+
+/**
+ * DELETE /api/admin/artworks/[id]
+ * Completely remove an artwork from the database (admin only)
+ */
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  try {
+    const session = await getServerSession(authOptions)
+
+    // Check authentication and admin role
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Unauthorized - Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    // Check if artwork exists
+    const artwork = await prisma.artwork.findUnique({
+      where: { id },
+      select: { id: true, title: true },
+    })
+
+    if (!artwork) {
+      return NextResponse.json(
+        { message: 'Artwork not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the artwork (CASCADE will handle related AdminActions)
+    await prisma.artwork.delete({
+      where: { id },
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Artwork "${artwork.title}" deleted successfully`,
+      },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Error deleting artwork:', error)
+    return NextResponse.json(
+      { message: 'Failed to delete artwork' },
+      { status: 500 }
+    )
+  }
+}
