@@ -25,7 +25,7 @@ export async function PATCH(
 
   try {
     const body = await req.json()
-    const { action, rejection_reason } = body
+    const { action, rejection_reason, edits } = body
 
     if (action === 'approve') {
       // Approve the artwork using a transaction
@@ -91,9 +91,61 @@ export async function PATCH(
         message: 'Artwork rejected successfully',
         artwork: result,
       })
+    } else if (action === 'edit') {
+      // Edit artwork details
+      if (!edits || typeof edits !== 'object') {
+        return NextResponse.json(
+          { message: 'Edits object is required for edit action' },
+          { status: 400 }
+        )
+      }
+
+      // Build update data object with only allowed fields
+      const updateData: any = {}
+      if (edits.title !== undefined) updateData.title = edits.title
+      if (edits.description !== undefined) updateData.description = edits.description
+      if (edits.tools_used !== undefined) updateData.tools_used = edits.tools_used
+      if (edits.project_type !== undefined) updateData.project_type = edits.project_type
+      if (edits.submitted_by_name !== undefined) updateData.submitted_by_name = edits.submitted_by_name
+      if (edits.submitted_by_email !== undefined) updateData.submitted_by_email = edits.submitted_by_email
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json(
+          { message: 'No valid fields provided to edit' },
+          { status: 400 }
+        )
+      }
+
+      const result = await prisma.$transaction(async tx => {
+        // Update artwork
+        const artwork = await tx.artwork.update({
+          where: { id },
+          data: updateData,
+        })
+
+        // Log admin action
+        await tx.adminAction.create({
+          data: {
+            action_type: 'USER_EDITED',
+            admin_id: session.user.id,
+            artwork_id: id,
+            metadata: {
+              edits: updateData,
+              edited_at: new Date().toISOString(),
+            },
+          },
+        })
+
+        return artwork
+      })
+
+      return NextResponse.json({
+        message: 'Artwork edited successfully',
+        artwork: result,
+      })
     } else {
       return NextResponse.json(
-        { message: 'Invalid action. Use "approve" or "reject"' },
+        { message: 'Invalid action. Use "approve", "reject", or "edit"' },
         { status: 400 }
       )
     }

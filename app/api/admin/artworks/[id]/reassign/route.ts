@@ -1,30 +1,101 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 /**
- * An endpoint for reassigning a piece of artwork. The admin should have the ability to assign the artwork to a
- * registered user's profile or correct any typos in the submission details before approval
- *
- * Priority: make sure only admins can do this action, so focus on what the session code is doing, whether or not
- * there's any problems in it! Checkout [...nextauth] and /lib/auth.ts
+ * PATCH /api/admin/artworks/[id]/reassign
+ * Admin action: reassign artwork to a different user
+ * Used for guest uploads that need to be assigned to registered users
  */
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const body = await req.json()
-  const { newUserId } = body // { "newUserId": "..." }
 
-  // TASK FOR DEV:
-  // 1. Validate newUserId exists and is a valid user
-  // 2. Check the current session's user. If that person an admin or not? If yes, continue. If no, give back an error message
-  // 3. Use a $transaction to:
-  //    a) Update artwork: set user_id = newUserId
-  //    b) Create an AdminAction: action_type='USER_EDITED', admin_id=adminId, artwork_id=id, metadata={ oldUserId: '...', newUserId: newUserId }
-  // 4. Return updated artwork.
-  // 5. 5. Create an AdminAction: action_type='USER_EDITED', admin_id=adminId, artwork_id=id, metadata={ oldUserId: '...', newUserId: newUserId }
+  // Check if user is authenticated and is an admin
+  const session = await getServerSession(authOptions)
 
-  return NextResponse.json({ message: 'Not Implemented' }, { status: 501 })
+  if (!session || session.user.role !== 'ADMIN') {
+    return NextResponse.json(
+      { message: 'Unauthorized - Admin access required' },
+      { status: 403 }
+    )
+  }
+
+  try {
+    const body = await req.json()
+    const { newUserId } = body
+
+    // Validate newUserId
+    if (!newUserId || typeof newUserId !== 'string') {
+      return NextResponse.json(
+        { message: 'newUserId is required and must be a string' },
+        { status: 400 }
+      )
+    }
+
+    // Check if the new user exists
+    const newUser = await prisma.user.findUnique({
+      where: { id: newUserId },
+      select: { id: true, username: true },
+    })
+
+    if (!newUser) {
+      return NextResponse.json(
+        { message: 'Target user not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get current artwork to capture old user_id
+    const currentArtwork = await prisma.artwork.findUnique({
+      where: { id },
+      select: { id: true, user_id: true },
+    })
+
+    if (!currentArtwork) {
+      return NextResponse.json(
+        { message: 'Artwork not found' },
+        { status: 404 }
+      )
+    }
+
+    // Reassign artwork using transaction
+    const result = await prisma.$transaction(async tx => {
+      // Update artwork user_id
+      const artwork = await tx.artwork.update({
+        where: { id },
+        data: { user_id: newUserId },
+      })
+
+      // Log admin action
+      await tx.adminAction.create({
+        data: {
+          action_type: 'USER_EDITED',
+          admin_id: session.user.id,
+          artwork_id: id,
+          metadata: {
+            oldUserId: currentArtwork.user_id,
+            newUserId: newUserId,
+            reassigned_at: new Date().toISOString(),
+          },
+        },
+      })
+
+      return artwork
+    })
+
+    return NextResponse.json({
+      message: 'Artwork reassigned successfully',
+      artwork: result,
+    })
+  } catch (error: any) {
+    console.error('Error reassigning artwork:', error)
+    return NextResponse.json(
+      { message: error.message || 'Failed to reassign artwork' },
+      { status: 500 }
+    )
+  }
 }
