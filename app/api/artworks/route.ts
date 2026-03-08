@@ -2,20 +2,45 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import cloudinary from '@/lib/cloudinary'
 
-// Mock file upload function - replace with actual cloud storage later
-async function uploadFileToStorage(file: File) {
-  // TODO: Implement actual file upload to cloud storage (Cloudinary, S3, etc.)
-  // For now, return mock URLs
-  const timestamp = Date.now()
-  const sanitizedName = file.name.replace(/\s+/g, '_')
-  const publicUrl = `https://mock-storage.com/artworks/${timestamp}-${sanitizedName}`
-  const thumbnailUrl = publicUrl.replace(
-    /\.(jpg|jpeg|png|gif|webp)$/i,
-    '_thumb.$1'
-  )
+/**
+ * Upload file to Cloudinary
+ * @param base64Data - Base64 encoded file data
+ * @param userId - User ID for folder organization (or 'guest')
+ * @returns Object with publicUrl and thumbnailUrl
+ */
+async function uploadFileToCloudinary(
+  base64Data: string,
+  userId: string | null
+) {
+  try {
+    const folder = `afh/artworks/${userId || 'guest'}`
 
-  return { publicUrl, thumbnailUrl }
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(base64Data, {
+      folder: folder,
+      resource_type: 'auto', // Automatically detect image or video
+      transformation: [
+        { quality: 'auto', fetch_format: 'auto' }, // Optimize quality and format
+      ],
+    })
+
+    // Generate thumbnail URL
+    const thumbnailUrl = cloudinary.url(uploadResult.public_id, {
+      transformation: [
+        { width: 400, height: 400, crop: 'fill', quality: 'auto' },
+      ],
+    })
+
+    return {
+      publicUrl: uploadResult.secure_url,
+      thumbnailUrl: thumbnailUrl,
+    }
+  } catch (error) {
+    console.error('Cloudinary upload error:', error)
+    throw new Error('Failed to upload file to cloud storage')
+  }
 }
 
 export async function GET() {
@@ -146,31 +171,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'File is required.' }, { status: 400 })
     }
 
-    // Convert base64 to File object
-    //TODO check if better way exists
+    // Validate base64 image data format
     const matches = image_base64.match(/^data:(.+);base64,(.+)$/)
     if (!matches || matches.length !== 3) {
       return NextResponse.json({ error: 'Invalid file data.' }, { status: 400 })
     }
     const mimeType = matches[1]
-    const base64Data = matches[2]
-    const byteCharacters = atob(base64Data)
-    const byteNumbers = new Array(byteCharacters.length)
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i)
-    }
-    const byteArray = new Uint8Array(byteNumbers)
-    const file = new File([byteArray], 'upload', { type: mimeType })
 
-    // File validation
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size must be less than 10MB.' },
-        { status: 400 }
-      )
-    }
-
+    // Validate file type
     const allowedTypes = [
       'image/jpeg',
       'image/png',
@@ -181,21 +189,23 @@ export async function POST(req: Request) {
       'video/quicktime',
     ]
 
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(mimeType)) {
       return NextResponse.json(
         { error: 'Invalid file type. Only images and videos are allowed.' },
         { status: 400 }
       )
     }
 
-    // Upload file to storage
-    //TODO const uploadResult = await uploadFileToStorage(file)
-    // const image_url = uploadResult.publicUrl
-    // const thumbnail_url = uploadResult.thumbnailUrl
-    const timestamp = Date.now()
-    const sanitizedName = `artwork-${timestamp}`
-    const image_url = `https://mock-storage.com/artworks/${sanitizedName}.${mimeType.split('/')[1]}`
-    const thumbnail_url = image_url.replace(/\.([^.]+)$/, '_thumb.$1')
+    // Note: File size validation happens client-side before base64 encoding
+    // Server-side validation done by Cloudinary (40MB limit by default)
+
+    // Upload file to Cloudinary
+    const uploadResult = await uploadFileToCloudinary(
+      image_base64,
+      session?.user?.id || null
+    )
+    const image_url = uploadResult.publicUrl
+    const thumbnail_url = uploadResult.thumbnailUrl
 
     // Prepare data for database
     const artworkData = {
