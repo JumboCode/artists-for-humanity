@@ -219,10 +219,7 @@ function GalleryArtworkItem({ art, index }: Readonly<{ art: ArtworkItem; index: 
   }
 
   return (
-    <div
-      key={`${art.name}-${art.title}-${index}`}
-      className="bg-white shadow-none"
-    >
+    <div className="bg-white shadow-none">
       {/* Image Section */}
       <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg">
         <Image

@@ -7,8 +7,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  // Fix workspace root warning
-  outputFileTracingRoot: __dirname,
   // Configure allowed image domains
   images: {
     remotePatterns: [
