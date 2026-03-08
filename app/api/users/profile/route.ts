@@ -48,7 +48,21 @@ export async function GET() {
       )
     }
 
-    return NextResponse.json(user, { status: 200 })
+    return NextResponse.json(
+      { 
+        profile: user.profile || {
+          display_name: user.username,
+          bio: null,
+          profile_image_url: null,
+          banner_image_url: null,
+          department: null,
+          school: null,
+          graduation_year: null,
+          instagram: null,
+        }
+      }, 
+      { status: 200 }
+    )
   } catch (error) {
     console.error('Error fetching profile:', error)
     return NextResponse.json(

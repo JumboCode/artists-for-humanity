@@ -62,10 +62,24 @@ export const authOptions: AuthOptions = {
     },
 
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id as string
         session.user.role = token.role as Role
         session.user.username = token.username as string
+        
+        // Fetch fresh profile data
+        try {
+          const userWithProfile = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            include: { profile: true },
+          })
+          
+          if (userWithProfile?.profile) {
+            session.user.profile = userWithProfile.profile
+          }
+        } catch (error) {
+          console.error('Error fetching profile in session:', error)
+        }
       }
       return session
     },
