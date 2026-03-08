@@ -482,6 +482,7 @@ export default function UserPage() {
                 />
               </label>
 
+              {/* VERSION CHECK: v2.0 - Text Input */}
               <div className="flex gap-3">
                 <label className="flex-1 flex flex-col text-sm">
                   <span className="form-label text-[13px]">School / High School</span>
