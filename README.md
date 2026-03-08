@@ -13,12 +13,7 @@ AFH is a nonprofit organization providing under-resourced teens with the keys to
 
 The platform is being developed in partnership with **JumboCode @ Tufts University**.
 
-## Live Demo
-
-<!-- Update with deployment link once live -->
-**Coming soon! Platform is under active development**
-
-## Planned Key Features
+## Key Features
 
 ### Authentication & Profiles
 - User registration and login with NextAuth
@@ -36,12 +31,6 @@ The platform is being developed in partnership with **JumboCode @ Tufts Universi
 - Queue management for pending submissions
 - Featured artwork controls (highlight talented work)
 
-### Future Enhancements (Phase 2+)
-- Search and discovery tools
-- Comments and reactions
-- Follow other artists
-- Mentorship matching tools
-- Project collaboration spaces
 
 ## Tech Stack
 
@@ -127,16 +116,11 @@ npm run type-check     # TypeScript type checking
 
 ### JumboCode Team (2024-2025)
 - **Project Manager**: John Puka
-- **Tech Lead**: Subhanga Upadhyay (Shub)
+- **Tech Lead**: Lauren Wu & Subhanga Upadhyay (Shub)
 - **Designer**: Shannon Chen
 
 ### AFH Team
 - **Director, Creative Tech**: Handy Dorceus ([hdorceus@afhboston.org](mailto:hdorceus@afhboston.org))
-
-### Development Teams
-- 5 partner groups working on different platform components
-- Weekly hack nights every Sunday
-- Team meetings Wednesdays 12-1PM @ Eaton 112
 
 ## Development Timeline
 
@@ -148,10 +132,3 @@ npm run type-check     # TypeScript type checking
 - **February 2025**: Feature completion, security audit
 - **March 2025**: Code freeze, user acceptance testing
 - **April 2025**: Final launch preparation and deployment
-
-### For Team Members
-1. Create feature branches: `feature/ticket-name`
-2. Follow coding standards as much as possible (TypeScript, TailwindCSS, Prettier)
-3. Test thoroughly on `http://localhost:3000`
-4. Submit pull requests for code review (PR template provided in `resources` folder)
-5. Attend weekly hack nights and team meetings whenever you can
