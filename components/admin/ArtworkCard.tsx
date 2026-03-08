@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { useState } from 'react'
 
 type Artwork = {
   id: string
@@ -22,7 +23,8 @@ type Props = {
   artwork: Artwork
   onApprove: () => void
   onReject: () => void
-  onFeature: () => void
+  onFeature?: () => void
+  showFeatureButton?: boolean
 }
 
 export default function ArtworkCard({
@@ -31,7 +33,8 @@ export default function ArtworkCard({
   onReject,
   onFeature,
   showFeatureButton = false,
-}: Props) {
+}: Readonly<Props>) {
+  const [imageError, setImageError] = useState(false)
   // Determine the artist name
   const artistName =
     artwork.author?.profile?.display_name ||
