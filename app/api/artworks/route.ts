@@ -217,6 +217,16 @@ export async function POST(req: Request) {
       )
     }
 
+    // Check file size (max 10 MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (image_base64.length > maxSize) {
+      return NextResponse.json(
+        { error: 'File size must be less than 10MB.' },
+        { status: 413 }
+      )
+    }
+
+
     // Note: File size validation happens client-side before base64 encoding
     // Server-side validation done by Cloudinary (40MB limit by default)
 

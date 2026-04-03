@@ -87,6 +87,7 @@ export default function UploadPage() {
     setErrors(prev => {
       const newErrors = { ...prev }
       delete newErrors[field]
+      setStatus(Object.keys(newErrors).length === 0 ? 'idle' : 'error')
       return newErrors
     })
   }
@@ -255,14 +256,18 @@ export default function UploadPage() {
     // Submit-specific validation
     if (!formData.title.trim()) {
       addErrorMessage('title', 'Artwork title is required')
-      return
     }
     if (formData.mediums.length === 0) {
       addErrorMessage('mediums', 'Please select at least one artwork medium')
+    }
+    const file = formData.file // We need to check file existence before using it
+    if (!file) {
+      addErrorMessage('file', 'Please upload a file')
       return
     }
-    if (!formData.file) {
-      addErrorMessage('file', 'Please upload a file')
+
+    // Final form validation
+    if (Object.keys(errors).length > 0) {
       return
     }
 
@@ -287,7 +292,7 @@ export default function UploadPage() {
     try {
       // Prepare FormData for upload
       const uploadData = new FormData()
-      uploadData.append('file', formData.file)
+      uploadData.append('file', file)
       uploadData.append('title', formData.title)
       uploadData.append('tools_used', formData.mediums.join(', '))
       uploadData.append('project_type', selectedFileType || 'image')
@@ -296,8 +301,7 @@ export default function UploadPage() {
         uploadData.append('description', formData.description)
       }
 
-      //TODO const imageUrl = await uploadToCloudinary(formData.file);
-      const imageBase64 = await fileToBase64(formData.file)
+      const imageBase64 = await fileToBase64(file)
 
       const response = await fetch('/api/artworks', {
         method: 'POST',
@@ -311,6 +315,11 @@ export default function UploadPage() {
           submitted_by_email: !session ? formData.email : undefined,
         }),
       })
+      
+      if (response.status === 413) {
+        addErrorMessage('file', 'File size must be less than 10MB')
+        return
+      }
 
       if (!response.ok) {
         const error = await response.json()
@@ -341,10 +350,13 @@ export default function UploadPage() {
         }, 30000)
       }
     } catch (error) {
+      // Show to user as error message
       addErrorMessage(
         'upload',
         error instanceof Error ? error.message : 'Failed to upload artwork'
       )
+      // Print to console for debugging
+      console.error('Upload error:', error)
     } finally {
       setIsSubmitting(false)
     }
