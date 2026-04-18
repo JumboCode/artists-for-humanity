@@ -24,6 +24,7 @@ export function AdminDashboard() {
   const [artworks, setArtworks] = useState<Artwork[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // Modal states
   const [rejectingArtwork, setRejectingArtwork] = useState<Artwork | null>(null)
@@ -62,7 +63,8 @@ export function AdminDashboard() {
       fetchQueue()
     } catch (err) {
       console.error('Failed to approve artwork:', err)
-      alert('Failed to approve artwork. Please try again.')
+      setActionError('Failed to approve artwork. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
     }
   }
 
@@ -91,7 +93,8 @@ export function AdminDashboard() {
       fetchQueue()
     } catch (err) {
       console.error('Failed to reject artwork:', err)
-      alert('Failed to reject artwork. Please try again.')
+      setActionError('Failed to reject artwork. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
     }
   }
 
@@ -116,7 +119,8 @@ export function AdminDashboard() {
       fetchQueue()
     } catch (err) {
       console.error('Failed to feature artwork:', err)
-      alert('Failed to feature artwork. Please try again.')
+      setActionError('Failed to feature artwork. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
     }
   }
 
@@ -156,6 +160,13 @@ export function AdminDashboard() {
 
   return (
     <>
+      {/* Action Error Banner */}
+      {actionError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 font-secondary">{actionError}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {artworks.map(artwork => (
           <ArtworkCard
