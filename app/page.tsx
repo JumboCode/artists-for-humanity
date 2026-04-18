@@ -329,9 +329,9 @@ export default function HomePage() {
   const isAdmin = session?.user?.role === 'ADMIN'
   
   const [searchQuery, setSearchQuery] = useState('')
-  const [artwork, setArtwork] = useState(FALLBACK_ARTWORK)
-  const [featuredArtwork, setFeaturedArtwork] = useState(FALLBACK_ARTWORK)
-  const [allArtwork, setAllArtwork] = useState(FALLBACK_ARTWORK)
+  const [artwork, setArtwork] = useState<ArtworkItem[]>([])
+  const [featuredArtwork, setFeaturedArtwork] = useState<ArtworkItem[]>([])
+  const [allArtwork, setAllArtwork] = useState<ArtworkItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
 
@@ -360,17 +360,15 @@ export default function HomePage() {
         featured: item.featured || false,
       }))
       
-      // Only update if we got artwork
-      if (transformedArtwork.length > 0) {
-        setAllArtwork(transformedArtwork)
-        // Separate featured artwork for carousel
-        const featured = transformedArtwork.filter((art: ArtworkItem) => art.featured)
-        setFeaturedArtwork(featured)
-        // Note: artwork (gallery) is set by the filter useEffect based on allArtwork
-      }
+      setAllArtwork(transformedArtwork)
+      // Separate featured artwork for carousel
+      const featured = transformedArtwork.filter((art: ArtworkItem) => art.featured)
+      setFeaturedArtwork(featured)
+      // Note: artwork (gallery) is set by the filter useEffect based on allArtwork
     } catch (error) {
       console.error('Error fetching artwork:', error)
-      // Keep using fallback artwork
+      setAllArtwork([])
+      setFeaturedArtwork([])
     } finally {
       setLoading(false)
     }
@@ -699,7 +697,11 @@ export default function HomePage() {
         ) : (
           <div className="w-full text-center py-12">
             <p className="text-gray-600 font-secondary text-lg">
-              No artwork found. Try adjusting your search or filters.
+              {loading
+                ? 'Loading artwork...'
+                : allArtwork.length === 0
+                  ? 'No artwork yet. Be the first to upload your work.'
+                  : 'No artwork found. Try adjusting your search or filters.'}
             </p>
           </div>
         )}
