@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Carousel from 'react-material-ui-carousel'
 import Image from 'next/image'
+import Link from 'next/link'
 import Masonry from '@mui/lab/Masonry'
 import { Paper, Box, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -712,9 +713,12 @@ export default function HomePage() {
             Do you also want to showcase your art on our homepage? Upload your
             work below.
           </h2>
-          <button className="inline-flex items-center justify-center min-w-[140px] h-[45px] px-6 py-3 rounded-full border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer">
+          <Link
+            href="/upload"
+            className="inline-flex items-center justify-center min-w-[140px] h-[45px] px-6 py-3 rounded-full border border-[#F26729] text-[#F26729] gap-[10px] font-secondary text-base transition-colors duration-300 hover:bg-[#F26729] hover:text-white cursor-pointer"
+          >
             Upload Your Work
-          </button>
+          </Link>
         </section>
       </div>
     </div>
