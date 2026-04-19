@@ -653,13 +653,15 @@ export default function HomePage() {
   const [featuredArtwork, setFeaturedArtwork] = useState<ArtworkItem[]>([])
   const [allArtwork, setAllArtwork] = useState<ArtworkItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
   const [selectedArtwork, setSelectedArtwork] = useState<ArtworkItem | null>(null)
   const [isArtworkDetailsLoading, setIsArtworkDetailsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [previewBgColor, setPreviewBgColor] = useState('#111111')
   const previewImageRef = useRef<HTMLImageElement>(null)
+  const filterDropdownRef = useRef<HTMLDivElement>(null)
 
   const mapArtworkFromApi = (item: any): ArtworkItem => ({
     id: item.id,
@@ -752,6 +754,20 @@ export default function HomePage() {
     setIsArtworkDetailsLoading(false)
   }
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const extractPreviewBackgroundColor = () => {
     if (!previewImageRef.current || previewImageRef.current.naturalHeight === 0) return
 
@@ -818,16 +834,18 @@ export default function HomePage() {
       )
     }
 
-    // Apply medium filter
-    if (selectedFilter) {
+    // Apply medium filters
+    if (selectedFilters.length > 0) {
       filtered = filtered.filter(art =>
-        art.medium.toLowerCase().includes(selectedFilter.toLowerCase())
+        selectedFilters.some(filter =>
+          art.medium.toLowerCase().includes(filter.toLowerCase())
+        )
       )
     }
 
     setArtwork(filtered)
     setCurrentPage(1)
-  }, [searchQuery, selectedFilter, allArtwork])
+  }, [searchQuery, selectedFilters, allArtwork])
 
   const totalPages = Math.max(1, Math.ceil(artwork.length / GALLERY_ITEMS_PER_PAGE))
   const startIndex = (currentPage - 1) * GALLERY_ITEMS_PER_PAGE
@@ -850,6 +868,26 @@ export default function HomePage() {
   const uniqueMediums = Array.from(
     new Set(allArtwork.flatMap(art => art.medium.split(',').map(m => m.trim())))
   ).slice(0, 5) // Show top 5 mediums
+
+  const toggleFilterMedium = (medium: string) => {
+    setSelectedFilters(prev =>
+      prev.includes(medium)
+        ? prev.filter(item => item !== medium)
+        : [...prev, medium]
+    )
+  }
+
+  const clearFilterMediums = () => {
+    setSelectedFilters([])
+    setIsFilterDropdownOpen(false)
+  }
+
+  let filterDropdownLabel = 'Select mediums...'
+  if (selectedFilters.length <= 2 && selectedFilters.length > 0) {
+    filterDropdownLabel = selectedFilters.join(', ')
+  } else if (selectedFilters.length > 2) {
+    filterDropdownLabel = `${selectedFilters.length} mediums selected`
+  }
 
   let emptyStateMessage = 'No artwork found. Try adjusting your search or filters.'
   if (loading) {
@@ -971,10 +1009,11 @@ export default function HomePage() {
         <section className="w-full mb-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <Box
+              className="mx-auto w-full max-w-[520px] lg:mx-0 lg:max-w-[420px]"
               display="flex"
               alignItems="center"
               gap={1.5}
-              sx={{ width: '100%', maxWidth: { xs: '100%', lg: '420px' } }}
+              sx={{ width: '100%' }}
             >
               <SearchIcon sx={{ color: '#000000', fontSize: '24px' }} />
               <input
@@ -999,28 +1038,21 @@ export default function HomePage() {
             </Box>
 
             {uniqueMediums.length > 0 && (
-              <div className="w-full lg:w-auto lg:min-w-[260px]">
-                <div className="relative">
-                  <select
-                    id="gallery-medium-filter"
-                    value={selectedFilter ?? ''}
-                    onChange={(e) => setSelectedFilter(e.target.value || null)}
-                    className="afh-pill-control w-full appearance-none pr-11"
-                    style={{
-                      WebkitAppearance: 'none',
-                      MozAppearance: 'none',
-                      appearance: 'none',
-                    }}
-                    aria-label="Filter artwork by medium"
+              <div ref={filterDropdownRef} className="relative w-full lg:w-auto lg:min-w-[260px]">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterDropdownOpen(prev => !prev)}
+                  className="afh-pill-control w-full justify-between pr-4"
+                  aria-haspopup="menu"
+                  aria-expanded={isFilterDropdownOpen}
+                >
+                  <span className={selectedFilters.length === 0 ? 'text-gray-500' : 'text-gray-800'}>
+                    {filterDropdownLabel}
+                  </span>
+                  <span
+                    className="ml-3 flex items-center text-[#F26729] transition-transform duration-300"
+                    style={{ transform: isFilterDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                   >
-                    <option value="">All mediums</option>
-                    {uniqueMediums.map((medium) => (
-                      <option key={medium} value={medium}>
-                        {medium}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#F26729]">
                     <svg
                       width="15"
                       height="15"
@@ -1031,7 +1063,50 @@ export default function HomePage() {
                       <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </span>
-                </div>
+                </button>
+
+                {isFilterDropdownOpen && (
+                  <div className="absolute right-0 top-full z-20 mt-2 w-full rounded-2xl border border-gray-200 bg-white shadow-lg lg:w-[320px]">
+                    <div className="max-h-64 overflow-y-auto p-3">
+                      <div className="flex items-center justify-between px-1 pb-2">
+                        <p className="text-xs uppercase tracking-[0.24em] text-gray-500 font-secondary">
+                          Mediums
+                        </p>
+                        {selectedFilters.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearFilterMediums}
+                            className="text-xs font-secondary text-afh-orange transition-colors hover:text-afh-orange/80"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {uniqueMediums.map((medium) => {
+                          const isSelected = selectedFilters.includes(medium)
+                          return (
+                            <label
+                              key={medium}
+                              className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-gray-50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleFilterMedium(medium)}
+                                className="h-4 w-4 rounded border-gray-300 text-afh-orange accent-afh-orange focus:ring-afh-orange"
+                              />
+                              <span className="text-sm font-secondary text-gray-800">
+                                {medium}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1237,14 +1312,14 @@ export default function HomePage() {
         <hr className="border-t-[1px] border-gray-400 my-[60px]" />
 
         {/* Call to Action */}
-        <section className="w-full">
-          <h2 className="text-left text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
+        <section className="w-full text-center md:text-left">
+          <h2 className="text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
             Do you also want to showcase your art on our homepage? Upload your
             work below.
           </h2>
           <Link
             href="/upload"
-            className="afh-pill-control afh-pill-control-accent min-w-[170px] gap-2 px-6 text-base"
+            className="afh-pill-control afh-pill-control-accent mx-auto md:mx-0 min-w-[170px] gap-2 px-6 text-base"
           >
             Upload Your Work
           </Link>

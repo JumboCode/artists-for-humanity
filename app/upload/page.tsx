@@ -691,7 +691,7 @@ export default function UploadPage() {
         )}
 
         {/* Submit Button */}
-        <div className="flex justify-end pt-6">
+        <div className="flex justify-center sm:justify-end pt-6">
           <button
             type="submit"
             disabled={isSubmitting}

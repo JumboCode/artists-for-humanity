@@ -119,7 +119,7 @@ export const LoginBody = () => {
           {formErrorMessage}
         </div>
       )}
-      <div className="flex justify-end">
+      <div className="flex justify-center sm:justify-end">
         <LoginButton isLoading={isLoading} />
       </div>
     </form>

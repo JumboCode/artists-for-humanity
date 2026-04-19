@@ -209,7 +209,7 @@ export const SignUpBody = () => {
           {formErrorMessage}
         </div>
       )}
-      <div className="flex justify-end">
+      <div className="flex justify-center sm:justify-end">
         <SignUpButton isLoading={isLoading} />
       </div>
     </form>
