@@ -42,8 +42,8 @@ export default function UploadPage() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [countdown, setCountdown] = useState(30)
+  const isGuest = !session
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -248,56 +248,68 @@ export default function UploadPage() {
     })
   }
 
+  const validateSubmission = (): boolean => {
+    if (!formData.title.trim()) {
+      addErrorMessage('title', 'Artwork title is required')
+      return false
+    }
+
+    if (formData.mediums.length === 0) {
+      addErrorMessage('mediums', 'Please select at least one artwork medium')
+      return false
+    }
+
+    if (!formData.file) {
+      addErrorMessage('file', 'Please upload a file')
+      return false
+    }
+
+    if (isGuest) {
+      if (!formData.artistName.trim()) {
+        addErrorMessage('artistName', 'Artist name is required for guest uploads')
+        return false
+      }
+
+      if (!formData.email.trim()) {
+        addErrorMessage('email', 'Email is required for guest uploads')
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const resetGuestUploadForm = () => {
+    setFormData({
+      title: '',
+      mediums: [],
+      description: '',
+      artistName: '',
+      email: '',
+      file: null,
+    })
+    setSelectedFileType(null)
+    setStatus('idle')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus('idle')
 
-    // Submit-specific validation
-    if (!formData.title.trim()) {
-      addErrorMessage('title', 'Artwork title is required')
+    if (!validateSubmission()) {
       return
-    }
-    if (formData.mediums.length === 0) {
-      addErrorMessage('mediums', 'Please select at least one artwork medium')
-      return
-    }
-    if (!formData.file) {
-      addErrorMessage('file', 'Please upload a file')
-      return
-    }
-
-    // Guest upload validation
-    if (!session) {
-      if (!formData.artistName.trim()) {
-        addErrorMessage(
-          'artistName',
-          'Artist name is required for guest uploads'
-        )
-        return
-      }
-      if (!formData.email.trim()) {
-        addErrorMessage('email', 'Email is required for guest uploads')
-        return
-      }
     }
 
     setIsSubmitting(true)
-    setUploadProgress(0)
 
     try {
-      // Prepare FormData for upload
-      const uploadData = new FormData()
-      uploadData.append('file', formData.file)
-      uploadData.append('title', formData.title)
-      uploadData.append('tools_used', formData.mediums.join(', '))
-      uploadData.append('project_type', selectedFileType || 'image')
-
-      if (formData.description) {
-        uploadData.append('description', formData.description)
+      const file = formData.file
+      if (!file) {
+        addErrorMessage('file', 'Please upload a file')
+        return
       }
 
-      //TODO const imageUrl = await uploadToCloudinary(formData.file);
-      const imageBase64 = await fileToBase64(formData.file)
+      const imageBase64 = await fileToBase64(file)
 
       const response = await fetch('/api/artworks', {
         method: 'POST',
@@ -307,8 +319,8 @@ export default function UploadPage() {
           description: formData.description,
           tools_used: formData.mediums.join(', '),
           image_base64: imageBase64,
-          submitted_by_name: !session ? formData.artistName : undefined,
-          submitted_by_email: !session ? formData.email : undefined,
+          submitted_by_name: isGuest ? formData.artistName : undefined,
+          submitted_by_email: isGuest ? formData.email : undefined,
         }),
       })
 
@@ -328,16 +340,7 @@ export default function UploadPage() {
       } else {
         // For guests, reset form after showing success message
         setTimeout(() => {
-          setFormData({
-            title: '',
-            mediums: [],
-            description: '',
-            artistName: '',
-            email: '',
-            file: null,
-          })
-          setSelectedFileType(null)
-          setStatus('idle')
+          resetGuestUploadForm()
         }, 30000)
       }
     } catch (error) {
@@ -359,9 +362,10 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 sm:px-8 md:px-16 lg:px-32 py-12 sm:py-16 md:py-20">
+    <div className="min-h-screen bg-white px-4 sm:px-8 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20 flex justify-center">
+      <div className="w-full max-w-4xl">
       {/* Header */}
-      <section className="mb- sm:mb-6 md:mb-8 text-left animate-fade-in">
+      <section className="mb-6 md:mb-8 text-center animate-fade-in flex flex-col items-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-snug max-w-2xl">
           Start building your project
         </h1>
@@ -370,7 +374,7 @@ export default function UploadPage() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-4xl space-y-10 sm:space-y-12 animate-fade-in"
+        className="w-full space-y-10 sm:space-y-12 animate-fade-in mx-auto"
       >
         {/* Error Message */}
         {status === 'error' && (
@@ -697,6 +701,7 @@ export default function UploadPage() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

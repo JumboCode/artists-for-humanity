@@ -11,6 +11,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const viewCookieName = `afh_artwork_view_${id}`
+    const cookieHeader = req.headers.get('cookie') || ''
+    const viewedRecently = cookieHeader
+      .split(';')
+      .some(cookie => cookie.trim().startsWith(`${viewCookieName}=`))
 
     const artwork = await prisma.artwork.findUnique({
       where: { id },
@@ -56,13 +61,48 @@ export async function GET(
       )
     }
 
-    // Increment view count
-    await prisma.artwork.update({
+    if (viewedRecently) {
+      return NextResponse.json(artwork, { status: 200 })
+    }
+
+    const updatedArtwork = await prisma.artwork.update({
       where: { id },
       data: { view_count: { increment: 1 } },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        image_url: true,
+        thumbnail_url: true,
+        project_type: true,
+        tools_used: true,
+        submitted_by_name: true,
+        created_at: true,
+        view_count: true,
+        featured: true,
+        status: true,
+        author: {
+          select: {
+            username: true,
+            profile: {
+              select: {
+                display_name: true,
+                profile_image_url: true,
+              },
+            },
+          },
+        },
+      },
     })
 
-    return NextResponse.json(artwork, { status: 200 })
+    const response = NextResponse.json(updatedArtwork, { status: 200 })
+    response.cookies.set(viewCookieName, '1', {
+      maxAge: 30,
+      path: '/',
+      sameSite: 'lax',
+    })
+
+    return response
   } catch (error) {
     console.error('Error fetching artwork:', error)
     return NextResponse.json(
