@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/users/artwork
- * Get current user's artwork (both published and drafts)
+ * Get current user's artwork (both published and pending approval)
  */
 export async function GET() {
   try {
@@ -44,14 +44,14 @@ export async function GET() {
       },
     })
 
-    // Separate published (approved) from drafts (pending/rejected)
+    // Separate published (approved) from pending approval (pending/rejected)
     const published = artworks.filter(art => art.status === 'APPROVED')
-    const drafts = artworks.filter(art => art.status !== 'APPROVED')
+    const pendingApproval = artworks.filter(art => art.status !== 'APPROVED')
 
     return NextResponse.json(
       {
         published,
-        drafts,
+        pendingApproval,
         total: artworks.length,
       },
       { status: 200 }
