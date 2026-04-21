@@ -33,11 +33,122 @@ type Profile = {
 type Artwork = {
   id: string
   title: string
+  description?: string | null
   image_url: string
   thumbnail_url: string | null
   tools_used: string[]
   project_type: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
   created_at: string
+}
+
+type ArtworkEditForm = {
+  title: string
+  description: string
+  tools_used: string
+  project_type: string
+}
+
+function isVideoAsset(url: string) {
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url) || /\/video\/upload\//i.test(url)
+}
+
+function renderArtworkStatusAction(
+  status: Artwork['status'],
+  isUpdatingArtworkState: boolean,
+  handleRemoveFromGallery: () => void,
+  handleSubmitDraft: () => void
+) {
+  if (status === 'APPROVED') {
+    return (
+      <button
+        type="button"
+        onClick={handleRemoveFromGallery}
+        disabled={isUpdatingArtworkState}
+        className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Remove From Gallery
+      </button>
+    )
+  }
+
+  if (status === 'REJECTED') {
+    return (
+      <button
+        type="button"
+        onClick={handleSubmitDraft}
+        disabled={isUpdatingArtworkState}
+        className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Upload Draft For Review
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      disabled
+      className="rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-500"
+    >
+      Awaiting Admin Review
+    </button>
+  )
+}
+
+type UserArtworkCardProps = {
+  art: Artwork
+  onOpen: (art: Artwork) => void
+}
+
+function UserArtworkCard({ art, onOpen }: Readonly<UserArtworkCardProps>) {
+  const isVideo = isVideoAsset(art.image_url)
+  const previewSrc = art.thumbnail_url || art.image_url
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(art)}
+      className="card card-hover group bg-white flex w-full flex-col gap-[10px] text-left"
+      aria-label={`Open details for ${art.title}`}
+    >
+      <div className="relative overflow-hidden rounded-lg">
+        {isVideo ? (
+          <video
+            src={art.image_url}
+            poster={previewSrc || undefined}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="metadata"
+          >
+            <track kind="captions" label="English captions" />
+          </video>
+        ) : (
+          <Image
+            src={previewSrc}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            alt={art.title}
+            width={600}
+            height={600}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/35" />
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-4 text-white">
+          <p className="text-xs uppercase tracking-[0.15em] text-white/85">Click to view details</p>
+        </div>
+      </div>
+
+      <div className="p-2 flex flex-col gap-1">
+        <p className="font-medium text-[14px]">{art.title}</p>
+        <p className="text-[12px] text-gray-600">
+          {art.tools_used.join(', ') || art.project_type || 'Artwork'}
+        </p>
+      </div>
+    </button>
+  )
 }
 
 export default function UserPortal() {
@@ -55,6 +166,21 @@ export default function UserPortal() {
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
+  const [profileFeedback, setProfileFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null)
+  const [editingArtwork, setEditingArtwork] = useState<Artwork | null>(null)
+  const [isSavingArtwork, setIsSavingArtwork] = useState(false)
+  const [isUpdatingArtworkState, setIsUpdatingArtworkState] = useState(false)
+  const [artworkEditError, setArtworkEditError] = useState<string | null>(null)
+  const [artworkEditForm, setArtworkEditForm] = useState<ArtworkEditForm>({
+    title: '',
+    description: '',
+    tools_used: '',
+    project_type: '',
+  })
   const [form, setForm] = useState<Profile>({
     display_name: '',
     bio: null,
@@ -226,16 +352,23 @@ export default function UserPortal() {
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setProfileFeedback(null)
 
     // Check display name
     if (!form.display_name.trim()) {
-      alert('Display name is required')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Display name is required',
+      })
       return
     }
 
     // Check Instagram
     if (form.instagram && !/^[a-zA-Z0-9._]+$/.test(form.instagram)) {
-      alert('Invalid Instagram username')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Invalid Instagram handle',
+      })
       return
     }
 
@@ -256,10 +389,16 @@ export default function UserPortal() {
       // Refresh session to update navbar profile picture
       await update()
       
-      alert('Profile updated successfully!')
+      setProfileFeedback({
+        type: 'success',
+        message: 'Profile updated successfully!',
+      })
     } catch (error) {
       console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Failed to save profile. Please try again.',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -274,6 +413,210 @@ export default function UserPortal() {
 
   function navigateToUpload() {
     router.push('/upload')
+  }
+
+  function openArtworkPreview(art: Artwork) {
+    setArtworkEditError(null)
+    setSelectedArtwork(art)
+  }
+
+  function closeArtworkPreview() {
+    setEditingArtwork(null)
+    setArtworkEditError(null)
+    setSelectedArtwork(null)
+  }
+
+  function openArtworkEdit() {
+    if (!selectedArtwork) return
+    setArtworkEditError(null)
+    setEditingArtwork(selectedArtwork)
+    setArtworkEditForm({
+      title: selectedArtwork.title || '',
+      description: selectedArtwork.description || '',
+      tools_used: selectedArtwork.tools_used?.join(', ') || '',
+      project_type: selectedArtwork.project_type || '',
+    })
+  }
+
+  function closeArtworkEdit() {
+    setEditingArtwork(null)
+    setArtworkEditError(null)
+  }
+
+  async function saveArtworkEdit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!editingArtwork) return
+
+    if (!artworkEditForm.title.trim()) {
+      setArtworkEditError('Title is required.')
+      return
+    }
+
+    setIsSavingArtwork(true)
+    setArtworkEditError(null)
+
+    try {
+      const payload = {
+        title: artworkEditForm.title.trim(),
+        description: artworkEditForm.description.trim(),
+        tools_used: artworkEditForm.tools_used
+          .split(',')
+          .map(tool => tool.trim())
+          .filter(Boolean),
+        project_type: artworkEditForm.project_type.trim(),
+      }
+
+      const res = await fetch(`/api/artworks/${editingArtwork.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to update artwork')
+      }
+
+      await fetchArtwork()
+      const updatedArtwork: Artwork = {
+        ...editingArtwork,
+        title: payload.title,
+        description: payload.description || null,
+        project_type: payload.project_type || null,
+        tools_used: payload.tools_used,
+      }
+
+      setSelectedArtwork(updatedArtwork)
+      setEditingArtwork(null)
+      setProfileFeedback({
+        type: 'success',
+        message: 'Artwork updated successfully!',
+      })
+    } catch (error) {
+      console.error('Error updating artwork:', error)
+      setArtworkEditError(
+        error instanceof Error ? error.message : 'Failed to update artwork.'
+      )
+    } finally {
+      setIsSavingArtwork(false)
+    }
+  }
+
+  async function handleDeleteArtwork() {
+    if (!selectedArtwork) return
+
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete this artwork? This action cannot be undone.'
+    )
+    if (!confirmed) return
+
+    setIsUpdatingArtworkState(true)
+    try {
+      const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to delete artwork')
+      }
+
+      await fetchArtwork()
+      closeArtworkPreview()
+      setProfileFeedback({
+        type: 'success',
+        message: 'Artwork deleted successfully.',
+      })
+    } catch (error) {
+      console.error('Error deleting artwork:', error)
+      setProfileFeedback({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'Failed to delete artwork.',
+      })
+    } finally {
+      setIsUpdatingArtworkState(false)
+    }
+  }
+
+  async function handleRemoveFromGallery() {
+    if (!selectedArtwork) return
+
+    const confirmed = window.confirm(
+      'Remove this artwork from the gallery and move it to drafts? It will require admin approval again before being published.'
+    )
+    if (!confirmed) return
+
+    setIsUpdatingArtworkState(true)
+    try {
+      const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'removeFromGallery' }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to remove from gallery')
+      }
+
+      await fetchArtwork()
+      closeArtworkPreview()
+      setOnPublished(false)
+      setProfileFeedback({
+        type: 'success',
+        message:
+          'Artwork moved to drafts. Submit it again whenever you are ready for admin review.',
+      })
+    } catch (error) {
+      console.error('Error removing artwork from gallery:', error)
+      setProfileFeedback({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to move artwork to drafts.',
+      })
+    } finally {
+      setIsUpdatingArtworkState(false)
+    }
+  }
+
+  async function handleSubmitDraft() {
+    if (!selectedArtwork) return
+
+    setIsUpdatingArtworkState(true)
+    try {
+      const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitDraft' }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to submit draft')
+      }
+
+      await fetchArtwork()
+      setSelectedArtwork({
+        ...selectedArtwork,
+        status: 'PENDING',
+      })
+      setProfileFeedback({
+        type: 'success',
+        message: 'Draft submitted for admin approval.',
+      })
+    } catch (error) {
+      console.error('Error submitting draft:', error)
+      setProfileFeedback({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'Failed to submit draft.',
+      })
+    } finally {
+      setIsUpdatingArtworkState(false)
+    }
   }
 
   const displayName = profile?.display_name || session?.user?.name || 'User'
@@ -298,6 +641,22 @@ export default function UserPortal() {
     <div className="bg-afh-white min-w-screen container-afh text-[black]">
       {/* 🔸 FULL-WIDTH HERO IMAGE */}
       <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
+        {profileFeedback && (
+          <div className="pointer-events-none absolute inset-x-0 top-4 z-20 flex justify-center px-4">
+            <div
+              className={`w-full max-w-2xl rounded-lg border px-4 py-3 font-secondary text-sm shadow-sm backdrop-blur-sm ${
+                profileFeedback.type === 'success'
+                  ? 'border-green-200 bg-green-50/95 text-green-700'
+                  : 'border-red-200 bg-red-50/95 text-red-700'
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              {profileFeedback.message}
+            </div>
+          </div>
+        )}
+
         <Image
           src={profile.banner_image_url || '/imgs/profile-banner-temp.png'}
           alt="Banner Image"
@@ -329,8 +688,35 @@ export default function UserPortal() {
 
           {/* Other user info */}
           <div className="flex flex-col gap-2 justify-start font-secondary font-light text-[16px]">
-            {/* Bio/Department */}
-            {(profile.bio || profile.department) && (
+            {/* Bio */}
+            {profile.bio && (
+              <div className="flex items-center gap-2.5">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 10.5C12.0711 10.5 13.75 8.82107 13.75 6.75C13.75 4.67893 12.0711 3 10 3C7.92893 3 6.25 4.67893 6.25 6.75C6.25 8.82107 7.92893 10.5 10 10.5Z"
+                    stroke="black"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3 17C3.91766 14.3257 6.72457 12.5 10 12.5C13.2754 12.5 16.0823 14.3257 17 17"
+                    stroke="black"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <p>{profile.bio}</p>
+              </div>
+            )}
+
+            {/* Department */}
+            {profile.department && (
               <div className="flex items-center gap-2.5">
                 <svg
                   width="22"
@@ -346,7 +732,7 @@ export default function UserPortal() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <p>{profile.department || profile.bio}</p>
+                <p>{profile.department}</p>
               </div>
             )}
             
@@ -432,24 +818,11 @@ export default function UserPortal() {
             <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary">
               {published.length > 0 ? (
                 published.map(art => (
-                  <div
+                  <UserArtworkCard
                     key={art.id}
-                    className="card card-hover bg-white flex flex-col gap-[10px]"
-                  >
-                    <Image
-                      src={art.thumbnail_url || art.image_url}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      alt={art.title}
-                      width={600}
-                      height={600}
-                    />
-                    <div className="p-2 flex flex-col gap-1">
-                      <p className="font-medium text-[14px]">{art.title}</p>
-                      <p className="text-[12px] text-gray-600">
-                        {art.tools_used.join(', ') || art.project_type || 'Artwork'}
-                      </p>
-                    </div>
-                  </div>
+                    art={art}
+                    onOpen={openArtworkPreview}
+                  />
                 ))
               ) : (
                 <div className="col-span-2 text-center py-12">
@@ -485,33 +858,210 @@ export default function UserPortal() {
               </button>
               
               {pendingApproval.map(art => (
-                <div
+                <UserArtworkCard
                   key={art.id}
-                  className="card card-hover bg-white flex flex-col gap-[10px]"
-                >
-                  <Image
-                    src={art.thumbnail_url || art.image_url}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    alt={art.title}
-                    width={600}
-                    height={600}
-                  />
-                  <div className="p-2 flex flex-col gap-1">
-                    <p className="font-medium text-[14px]">{art.title}</p>
-                    <p className="text-[12px] text-gray-600">
-                      {art.tools_used.join(', ') || art.project_type || 'Artwork'}
-                    </p>
-                  </div>
-                </div>
+                  art={art}
+                  onOpen={openArtworkPreview}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
 
+      {selectedArtwork && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            onClick={closeArtworkPreview}
+            aria-label="Close artwork preview"
+          />
+          <div className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-auto rounded-2xl bg-white shadow-afh border border-gray-100">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+              <h3 className="text-xl font-heading text-afh-blue">{selectedArtwork.title}</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openArtworkEdit}
+                  className="rounded-full border border-afh-orange px-4 py-1.5 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                >
+                  Edit Artwork
+                </button>
+                <button
+                  type="button"
+                  onClick={closeArtworkPreview}
+                  className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                  aria-label="Close preview"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              <div className="relative flex min-h-[320px] w-full items-center justify-center overflow-hidden rounded-xl bg-gray-100 p-2 sm:p-4">
+                {isVideoAsset(selectedArtwork.image_url) ? (
+                  <video
+                    src={selectedArtwork.image_url}
+                    poster={selectedArtwork.thumbnail_url || undefined}
+                    controls
+                    className="max-h-[70vh] w-full rounded-lg object-contain"
+                    preload="metadata"
+                  >
+                    <track kind="captions" label="English captions" />
+                  </video>
+                ) : (
+                  <Image
+                    src={selectedArtwork.image_url}
+                    alt={selectedArtwork.title}
+                    width={1200}
+                    height={900}
+                    className="max-h-[70vh] w-auto rounded-lg object-contain"
+                  />
+                )}
+              </div>
+
+              <div className="mt-4 text-sm text-gray-600 font-secondary">
+                <p>
+                  Status: <span className="font-medium">{selectedArtwork.status}</span>
+                </p>
+                <p>
+                  {selectedArtwork.tools_used.join(', ') || selectedArtwork.project_type || 'Artwork'}
+                </p>
+                {selectedArtwork.description && (
+                  <p className="mt-2 whitespace-pre-wrap">{selectedArtwork.description}</p>
+                )}
+                <p className="mt-1">Created: {new Date(selectedArtwork.created_at).toLocaleDateString()}</p>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {renderArtworkStatusAction(
+                  selectedArtwork.status,
+                  isUpdatingArtworkState,
+                  handleRemoveFromGallery,
+                  handleSubmitDraft
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleDeleteArtwork}
+                  disabled={isUpdatingArtworkState}
+                  className="rounded-full border border-red-500 px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Delete Artwork
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingArtwork && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            onClick={closeArtworkEdit}
+            aria-label="Close artwork edit modal"
+          />
+
+          <form
+            onSubmit={saveArtworkEdit}
+            className="relative z-10 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-afh max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
+              <h3 className="text-xl font-heading text-afh-blue">Edit Artwork</h3>
+              <button
+                type="button"
+                onClick={closeArtworkEdit}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                aria-label="Close artwork edit"
+              >
+                ×
+              </button>
+            </div>
+
+            {artworkEditError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {artworkEditError}
+              </div>
+            )}
+
+            <div className="mt-4 grid grid-cols-1 gap-4">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-secondary text-gray-700">Title</span>
+                <input
+                  type="text"
+                  value={artworkEditForm.title}
+                  onChange={(e) =>
+                    setArtworkEditForm({ ...artworkEditForm, title: e.target.value })
+                  }
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  required
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-secondary text-gray-700">Description</span>
+                <textarea
+                  value={artworkEditForm.description}
+                  onChange={(e) =>
+                    setArtworkEditForm({ ...artworkEditForm, description: e.target.value })
+                  }
+                  className="min-h-[110px] rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-secondary text-gray-700">Mediums/Tools (comma separated)</span>
+                <input
+                  type="text"
+                  value={artworkEditForm.tools_used}
+                  onChange={(e) =>
+                    setArtworkEditForm({ ...artworkEditForm, tools_used: e.target.value })
+                  }
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  placeholder="Oil Paint, Procreate, Photoshop"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-secondary text-gray-700">Project Type</span>
+                <input
+                  type="text"
+                  value={artworkEditForm.project_type}
+                  onChange={(e) =>
+                    setArtworkEditForm({ ...artworkEditForm, project_type: e.target.value })
+                  }
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeArtworkEdit}
+                className="rounded-full border border-gray-300 px-5 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingArtwork}
+                className="rounded-full border border-afh-orange bg-afh-orange px-5 py-2 text-white transition-colors hover:bg-afh-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingArtwork ? 'Saving...' : 'Save Artwork'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Edit modal */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <button
             type="button"
             className="absolute inset-0 bg-black/50 animate-fade-in cursor-default"
@@ -522,7 +1072,7 @@ export default function UserPortal() {
           />
           <form
             onSubmit={saveProfile}
-            className="relative bg-white rounded-xl p-8 w-full max-w-3xl mx-4 shadow-afh border border-gray-100 animate-fade-in"
+            className="relative bg-white rounded-xl p-6 sm:p-8 w-full max-w-3xl shadow-afh border border-gray-100 animate-fade-in max-h-[90vh] overflow-y-auto"
             style={{ animationDuration: '200ms' }}
             aria-label="Edit profile form"
           >
