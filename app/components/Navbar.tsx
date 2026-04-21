@@ -32,6 +32,13 @@ const Navbar = () => {
         : 'text-afh-blue hover:text-afh-orange'
     }`;
 
+  const mobileMenuItemClasses = (path: string) =>
+    `block w-full rounded-full border px-4 py-2 text-base font-medium transition-all duration-200 ${
+      pathname === path
+        ? 'border-afh-orange bg-afh-orange text-white'
+        : 'border-afh-orange/60 text-afh-blue hover:bg-afh-orange hover:text-white'
+    }`;
+
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-4">
@@ -61,8 +68,9 @@ const Navbar = () => {
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-1 focus:outline-none rounded-full"
+                  className="flex items-center space-x-1.5 rounded-full border border-afh-orange/50 px-2.5 py-1.5 text-afh-blue transition-all duration-200 hover:bg-afh-orange hover:text-white focus:outline-none"
                   aria-label="Profile menu"
+                  aria-expanded={isProfileOpen}
                 >
                   <Image
                     src={session?.user?.profile?.profile_image_url || "/imgs/user-stock.png"}
@@ -71,7 +79,10 @@ const Navbar = () => {
                     height={32}
                     className="h-8 w-8 rounded-full object-cover"
                   />
-                  <ChevronDown size={16} className="text-afh-blue/70" />
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : 'rotate-0'}`}
+                  />
                 </button>
 
                 {/* Dropdown Menu */}
@@ -80,7 +91,7 @@ const Navbar = () => {
                     {session.user.role === 'ADMIN' && (
                       <Link
                         href="/admin"
-                        className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                        className="mx-2 my-1 block rounded-full border border-afh-orange/60 px-4 py-2 text-sm font-medium text-afh-blue transition-all duration-150 text-center whitespace-nowrap hover:bg-afh-orange hover:text-white"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Admin Dashboard
@@ -88,7 +99,7 @@ const Navbar = () => {
                     )}
                     <Link
                       href="/user-portal"
-                      className="block px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                      className="mx-2 my-1 block rounded-full border border-afh-orange/60 px-4 py-2 text-sm font-medium text-afh-blue transition-all duration-150 text-center whitespace-nowrap hover:bg-afh-orange hover:text-white"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       Go to Profile
@@ -98,7 +109,7 @@ const Navbar = () => {
                         setIsProfileOpen(false);
                         signOut({ callbackUrl: '/login' });
                       }}
-                      className="block w-full px-4 py-2 text-sm font-medium text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange transition-all duration-150 text-center whitespace-nowrap"
+                      className="mx-2 my-1 block w-[calc(100%-1rem)] rounded-full border border-afh-orange/60 px-4 py-2 text-sm font-medium text-afh-blue transition-all duration-150 text-center whitespace-nowrap hover:bg-afh-orange hover:text-white"
                     >
                       Sign Out
                     </button>
@@ -116,10 +127,15 @@ const Navbar = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-md text-afh-blue hover:bg-afh-orange/10 hover:text-afh-orange focus:outline-none transition-all duration-300"
+              className="inline-flex items-center gap-1.5 rounded-full border border-afh-orange/60 px-3 py-2 text-afh-blue transition-all duration-200 hover:bg-afh-orange hover:text-white focus:outline-none"
               aria-label="Toggle menu"
+              aria-expanded={isOpen}
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+              />
             </button>
           </div>
         </div>
@@ -128,17 +144,17 @@ const Navbar = () => {
       {/* Mobile Dropdown Menu */}
       {isOpen && (
         <div className="md:hidden border-t border-afh-blue/10 bg-white shadow-afh">
-          <div className="px-4 pt-2 pb-3 space-y-1">
+          <div className="px-4 pt-3 pb-4 space-y-2">
             <Link
               href="/"
-              className={`block ${linkClasses('/')}`}
+              className={mobileMenuItemClasses('/')}
               onClick={() => setIsOpen(false)}
             >
               Gallery
             </Link>
             <Link
               href="/upload"
-              className={`block ${linkClasses('/upload')}`}
+              className={mobileMenuItemClasses('/upload')}
               onClick={() => setIsOpen(false)}
             >
               Upload My Work
@@ -148,7 +164,7 @@ const Navbar = () => {
                 {session.user.role === 'ADMIN' && (
                   <Link
                     href="/admin"
-                    className={`block ${linkClasses("/admin")}`}
+                    className={mobileMenuItemClasses('/admin')}
                     onClick={() => setIsOpen(false)}
                   >
                     Admin Dashboard
@@ -156,7 +172,7 @@ const Navbar = () => {
                 )}
                 <Link
                   href="/user-portal"
-                  className={`block ${linkClasses("/user-portal")}`}
+                  className={mobileMenuItemClasses('/user-portal')}
                   onClick={() => setIsOpen(false)}
                 >
                   Go to Profile
@@ -166,7 +182,7 @@ const Navbar = () => {
                     setIsOpen(false);
                     signOut({ callbackUrl: '/login' });
                   }}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-afh-blue hover:text-afh-orange transition-all duration-300"
+                  className="block w-full rounded-full border border-afh-orange/60 px-4 py-2 text-center text-base font-medium text-afh-blue transition-all duration-200 hover:bg-afh-orange hover:text-white"
                 >
                   Sign Out
                 </button>
@@ -174,7 +190,7 @@ const Navbar = () => {
             ) : (
               <Link
                 href="/login"
-                className={`block ${linkClasses("/login")}`}
+                className={mobileMenuItemClasses('/login')}
                 onClick={() => setIsOpen(false)}
               >
                 Login

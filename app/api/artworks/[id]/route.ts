@@ -112,7 +112,7 @@ export async function GET(
   }
 }
 
-// PATCH - Update artwork (only for owner before approval)
+// PATCH - Update artwork (owner can edit after upload)
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -150,16 +150,71 @@ export async function PATCH(
       )
     }
 
-    // Can only edit if pending
-    if (artwork.status !== 'PENDING') {
+    // Parse request body
+    const data = await req.json()
+
+    if (data.action === 'removeFromGallery') {
+      if (artwork.status !== 'APPROVED') {
+        return NextResponse.json(
+          { error: 'Only published artwork can be removed from gallery' },
+          { status: 400 }
+        )
+      }
+
+      const movedToDraft = await prisma.artwork.update({
+        where: { id },
+        data: {
+          status: 'PENDING',
+          featured: false,
+          approved_at: null,
+          approved_by_id: null,
+          rejection_reason: null,
+          updated_at: new Date(),
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      })
+
       return NextResponse.json(
-        { error: 'Cannot edit approved or rejected artwork' },
-        { status: 403 }
+        {
+          message: 'Artwork moved to drafts and removed from gallery',
+          artwork: movedToDraft,
+        },
+        { status: 200 }
       )
     }
 
-    // Parse request body
-    const data = await req.json()
+    if (data.action === 'submitDraft') {
+      if (artwork.status === 'APPROVED') {
+        return NextResponse.json(
+          { error: 'Published artwork cannot be submitted as draft' },
+          { status: 400 }
+        )
+      }
+
+      const submittedDraft = await prisma.artwork.update({
+        where: { id },
+        data: {
+          status: 'PENDING',
+          rejection_reason: null,
+          updated_at: new Date(),
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          message: 'Draft submitted for admin review',
+          artwork: submittedDraft,
+        },
+        { status: 200 }
+      )
+    }
 
     // Update artwork
     const updatedArtwork = await prisma.artwork.update({

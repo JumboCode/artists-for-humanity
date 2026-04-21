@@ -42,6 +42,7 @@ export default function UploadPage() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [shouldOpenFilePicker, setShouldOpenFilePicker] = useState(false)
   const [countdown, setCountdown] = useState(30)
   const isGuest = !session
 
@@ -59,6 +60,17 @@ export default function UploadPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (!shouldOpenFilePicker || !fileInputRef.current) return
+
+    const timeoutId = window.setTimeout(() => {
+      fileInputRef.current?.click()
+      setShouldOpenFilePicker(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [shouldOpenFilePicker, selectedFileType])
 
   // Countdown timer for guest success message
   useEffect(() => {
@@ -227,9 +239,7 @@ export default function UploadPage() {
 
   const handleFileTypeClick = (type: FileType) => {
     setSelectedFileType(type)
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
+    setShouldOpenFilePicker(true)
   }
 
   const getUploadBoxClasses = () => {
@@ -549,6 +559,9 @@ export default function UploadPage() {
                   type="button"
                   onClick={() => {
                     setFormData(prev => ({ ...prev, file: null }))
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
                     removeErrorMessage('file')
                   }}
                   className="text-sm text-afh-orange hover:underline"
@@ -691,7 +704,7 @@ export default function UploadPage() {
         )}
 
         {/* Submit Button */}
-        <div className="flex justify-center sm:justify-end pt-6">
+        <div className="flex justify-center pt-6">
           <button
             type="submit"
             disabled={isSubmitting}

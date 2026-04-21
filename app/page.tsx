@@ -131,6 +131,7 @@ type ArtworkItem = {
   medium: string
   year: number
   image: string
+  thumbnail?: string | null
   featured: boolean
   projectType?: string | null
   toolsUsed?: string[]
@@ -165,6 +166,11 @@ function getArtworkPreviewBackgroundStyle(color: string) {
   return {
     backgroundColor: color,
   }
+}
+
+function isVideoAsset(url?: string | null) {
+  if (!url) return false
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url) || /\/video\/upload\//i.test(url)
 }
 
 function ArtworkCarouselItem({ 
@@ -338,6 +344,9 @@ function GalleryArtworkCard({
 }: Readonly<GalleryArtworkCardProps>) {
   const [imgSrc, setImgSrc] = useState(art.image)
   const [hasError, setHasError] = useState(false)
+  const mediaSrc = art.image
+  const previewSrc = art.thumbnail || art.image
+  const isVideo = isVideoAsset(mediaSrc)
 
   return (
     <div className="bg-white shadow-none relative group">
@@ -349,21 +358,36 @@ function GalleryArtworkCard({
       >
         <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg relative">
           <div className="w-full relative overflow-hidden rounded-lg">
-            <Image
-              src={imgSrc}
-              alt={art.title}
-              width={600}
-              height={800}
-              style={{
-                width: '100%',
-                height: 'auto',
-                borderRadius: '8px',
-                transition: 'transform 0.3s ease',
-              }}
-              className="hover:scale-105"
-              onError={() => applyImageFallbackOnce(hasError, setImgSrc, setHasError)}
-              unoptimized={imgSrc.includes('mock-storage')}
-            />
+            {isVideo ? (
+              <video
+                src={mediaSrc}
+                poster={previewSrc || undefined}
+                className="w-full h-auto rounded-lg transition-transform duration-300 hover:scale-105"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              >
+                <track kind="captions" label="English captions" />
+              </video>
+            ) : (
+              <Image
+                src={imgSrc}
+                alt={art.title}
+                width={600}
+                height={800}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: '8px',
+                  transition: 'transform 0.3s ease',
+                }}
+                className="hover:scale-105"
+                onError={() => applyImageFallbackOnce(hasError, setImgSrc, setHasError)}
+                unoptimized={imgSrc.includes('mock-storage')}
+              />
+            )}
 
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300" />
             <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-4 text-white">
@@ -673,6 +697,7 @@ export default function HomePage() {
     medium: item.tools_used?.join(', ') || item.project_type || 'Mixed Media',
     year: new Date(item.created_at).getFullYear(),
     image: item.image_url || item.thumbnail_url,
+    thumbnail: item.thumbnail_url || null,
     featured: item.featured || false,
     projectType: item.project_type || null,
     toolsUsed: item.tools_used || [],
@@ -1220,15 +1245,27 @@ export default function HomePage() {
               <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
                 <div className="relative" style={getArtworkPreviewBackgroundStyle(previewBgColor)}>
                   <div className="relative flex min-h-[320px] h-[clamp(320px,68vh,760px)] w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8">
-                    <Image
-                      ref={previewImageRef}
-                      src={selectedArtwork.image}
-                      alt={selectedArtwork.title}
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 1024px) 100vw, 58vw"
-                      onLoad={extractPreviewBackgroundColor}
-                    />
+                    {isVideoAsset(selectedArtwork.image) ? (
+                      <video
+                        src={selectedArtwork.image}
+                        poster={selectedArtwork.thumbnail || undefined}
+                        controls
+                        className="max-h-full max-w-full object-contain rounded-lg"
+                        preload="metadata"
+                      >
+                        <track kind="captions" label="English captions" />
+                      </video>
+                    ) : (
+                      <Image
+                        ref={previewImageRef}
+                        src={selectedArtwork.image}
+                        alt={selectedArtwork.title}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 1024px) 100vw, 58vw"
+                        onLoad={extractPreviewBackgroundColor}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1312,14 +1349,14 @@ export default function HomePage() {
         <hr className="border-t-[1px] border-gray-400 my-[60px]" />
 
         {/* Call to Action */}
-        <section className="w-full text-center md:text-left">
-          <h2 className="text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
+        <section className="w-full text-center">
+          <h2 className="mx-auto max-w-3xl text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
             Do you also want to showcase your art on our homepage? Upload your
             work below.
           </h2>
           <Link
             href="/upload"
-            className="afh-pill-control afh-pill-control-accent mx-auto md:mx-0 min-w-[170px] gap-2 px-6 text-base"
+            className="afh-pill-control afh-pill-control-accent mx-auto min-w-[170px] gap-2 px-6 text-base"
           >
             Upload Your Work
           </Link>
