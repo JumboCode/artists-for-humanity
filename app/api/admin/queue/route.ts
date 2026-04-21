@@ -8,13 +8,13 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/admin/queue
- * Returns all pending artworks for admin moderation
+ * Returns artworks for admin moderation and edits across statuses
  */
 export async function GET() {
   // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json(
       { message: 'Unauthorized - Admin access required' },
       { status: 403 }
@@ -22,26 +22,47 @@ export async function GET() {
   }
 
   try {
-    // Fetch all pending artworks with author details
-    const pendingArtworks = await prisma.artwork.findMany({
-      where: {
-        status: 'PENDING',
-      },
-      include: {
+    // Fetch artworks across statuses with author details
+    const artworks = await prisma.artwork.findMany({
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        image_url: true,
+        thumbnail_url: true,
+        status: true,
+        project_type: true,
+        tools_used: true,
+        submitted_by_name: true,
+        submitted_by_email: true,
+        created_at: true,
         author: {
-          include: {
-            profile: true,
+          select: {
+            username: true,
+            profile: {
+              select: {
+                display_name: true,
+              },
+            },
           },
         },
       },
       orderBy: {
-        created_at: 'asc', // FIFO: First submitted, first in queue
+        created_at: 'desc',
       },
     })
 
+    const counts = {
+      total: artworks.length,
+      pending: artworks.filter((art) => art.status === 'PENDING').length,
+      approved: artworks.filter((art) => art.status === 'APPROVED').length,
+      rejected: artworks.filter((art) => art.status === 'REJECTED').length,
+    }
+
     return NextResponse.json({
-      count: pendingArtworks.length,
-      artworks: pendingArtworks,
+      count: artworks.length,
+      counts,
+      artworks,
     })
   } catch (error: any) {
     console.error('Error fetching admin queue:', error)

@@ -42,8 +42,9 @@ export default function UploadPage() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const [shouldOpenFilePicker, setShouldOpenFilePicker] = useState(false)
   const [countdown, setCountdown] = useState(30)
+  const isGuest = !session
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -59,6 +60,17 @@ export default function UploadPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (!shouldOpenFilePicker || !fileInputRef.current) return
+
+    const timeoutId = window.setTimeout(() => {
+      fileInputRef.current?.click()
+      setShouldOpenFilePicker(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [shouldOpenFilePicker, selectedFileType])
 
   // Countdown timer for guest success message
   useEffect(() => {
@@ -228,9 +240,7 @@ export default function UploadPage() {
 
   const handleFileTypeClick = (type: FileType) => {
     setSelectedFileType(type)
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
+    setShouldOpenFilePicker(true)
   }
 
   const getUploadBoxClasses = () => {
@@ -249,21 +259,22 @@ export default function UploadPage() {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setStatus('idle')
-
-    // Submit-specific validation
+  const validateSubmission = (): boolean => {
     if (!formData.title.trim()) {
       addErrorMessage('title', 'Artwork title is required')
+      return false
     }
+
     if (formData.mediums.length === 0) {
       addErrorMessage('mediums', 'Please select at least one artwork medium')
+      return false
     }
-    const file = formData.file // We need to check file existence before using it
+    
+    // We need to check file existence before using it
+    const file = formData.file
     if (!file) {
       addErrorMessage('file', 'Please upload a file')
-      return
+      return false
     }
 
     // Final form validation
@@ -272,35 +283,45 @@ export default function UploadPage() {
     }
 
     // Guest upload validation
-    if (!session) {
+    if (isGuest) {
       if (!formData.artistName.trim()) {
-        addErrorMessage(
-          'artistName',
-          'Artist name is required for guest uploads'
-        )
-        return
+        addErrorMessage('artistName', 'Artist name is required for guest uploads')
+        return false
       }
+
       if (!formData.email.trim()) {
         addErrorMessage('email', 'Email is required for guest uploads')
-        return
+        return false
       }
     }
 
+    return true
+  }
+
+  const resetGuestUploadForm = () => {
+    setFormData({
+      title: '',
+      mediums: [],
+      description: '',
+      artistName: '',
+      email: '',
+      file: null,
+    })
+    setSelectedFileType(null)
+    setStatus('idle')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setStatus('idle')
+
+    if (!validateSubmission()) {
+      return
+    }
+
     setIsSubmitting(true)
-    setUploadProgress(0)
 
     try {
-      // Prepare FormData for upload
-      const uploadData = new FormData()
-      uploadData.append('file', file)
-      uploadData.append('title', formData.title)
-      uploadData.append('tools_used', formData.mediums.join(', '))
-      uploadData.append('project_type', selectedFileType || 'image')
-
-      if (formData.description) {
-        uploadData.append('description', formData.description)
-      }
-
       const imageBase64 = await fileToBase64(file)
 
       const response = await fetch('/api/artworks', {
@@ -311,8 +332,8 @@ export default function UploadPage() {
           description: formData.description,
           tools_used: formData.mediums.join(', '),
           image_base64: imageBase64,
-          submitted_by_name: !session ? formData.artistName : undefined,
-          submitted_by_email: !session ? formData.email : undefined,
+          submitted_by_name: isGuest ? formData.artistName : undefined,
+          submitted_by_email: isGuest ? formData.email : undefined,
         }),
       })
       
@@ -337,16 +358,7 @@ export default function UploadPage() {
       } else {
         // For guests, reset form after showing success message
         setTimeout(() => {
-          setFormData({
-            title: '',
-            mediums: [],
-            description: '',
-            artistName: '',
-            email: '',
-            file: null,
-          })
-          setSelectedFileType(null)
-          setStatus('idle')
+          resetGuestUploadForm()
         }, 30000)
       }
     } catch (error) {
@@ -371,9 +383,10 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 sm:px-8 md:px-16 lg:px-32 py-12 sm:py-16 md:py-20">
+    <div className="min-h-screen bg-white px-4 sm:px-8 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20 flex justify-center">
+      <div className="w-full max-w-4xl">
       {/* Header */}
-      <section className="mb- sm:mb-6 md:mb-8 text-left animate-fade-in">
+      <section className="mb-6 md:mb-8 text-center animate-fade-in flex flex-col items-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-snug max-w-2xl">
           Start building your project
         </h1>
@@ -382,7 +395,7 @@ export default function UploadPage() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-4xl space-y-10 sm:space-y-12 animate-fade-in"
+        className="w-full space-y-10 sm:space-y-12 animate-fade-in mx-auto"
       >
         {/* Error Message */}
         {status === 'error' && (
@@ -557,6 +570,9 @@ export default function UploadPage() {
                   type="button"
                   onClick={() => {
                     setFormData(prev => ({ ...prev, file: null }))
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
                     removeErrorMessage('file')
                   }}
                   className="text-sm text-afh-orange hover:underline"
@@ -699,7 +715,7 @@ export default function UploadPage() {
         )}
 
         {/* Submit Button */}
-        <div className="flex justify-end pt-6">
+        <div className="flex justify-center pt-6">
           <button
             type="submit"
             disabled={isSubmitting}
@@ -709,6 +725,7 @@ export default function UploadPage() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

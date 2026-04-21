@@ -104,11 +104,6 @@
     @apply border-2 border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white font-medium px-6 py-3 rounded-lg transition-all duration-250;
   }
 
-  /* AFH Card Component
-  .card {
-    @apply bg-black rounded-xl shadow-afh border border-gray-100 overflow-hidden;
-  } */
-
   /* Updated Card Component */
   .card {
     @apply bg-black rounded-xl shadow-afh overflow-hidden;
@@ -144,6 +139,51 @@
   /* AFH Hero Section */
   .hero-gradient {
     @apply bg-gradient-to-br from-afh-orange/10 to-afh-blue/10;
+  }
+
+  /* Cohesive pill control system for filters, pagination, and CTA actions */
+  .afh-pill-control {
+    @apply inline-flex items-center justify-center rounded-full border font-secondary text-sm transition-all duration-200;
+    height: 44px;
+    padding: 0 16px;
+    border-color: #d1d5db;
+    background: #ffffff;
+    color: #374151;
+  }
+
+  .afh-pill-control:hover {
+    border-color: var(--afh-orange);
+    color: var(--afh-orange);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  }
+
+  .afh-pill-control:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(242, 103, 41, 0.18);
+    border-color: var(--afh-orange);
+  }
+
+  .afh-pill-control-active {
+    border-color: var(--afh-orange);
+    background: var(--afh-orange);
+    color: #ffffff;
+  }
+
+  .afh-pill-control-active:hover {
+    border-color: var(--afh-orange);
+    background: #e95a1a;
+    color: #ffffff;
+  }
+
+  .afh-pill-control-accent {
+    border-color: var(--afh-orange);
+    color: var(--afh-orange);
+  }
+
+  .afh-pill-control-accent:hover {
+    border-color: var(--afh-orange);
+    background: var(--afh-orange);
+    color: #ffffff;
   }
 }
 
@@ -199,6 +239,8 @@
     transform: translateY(0);
   }
 }
+
+
 
 /* Remove default input focus styling */
 input:focus,

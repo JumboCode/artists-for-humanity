@@ -85,7 +85,7 @@ export const LoginBody = () => {
       onSubmit={handleSubmit}
       className="flex flex-col h-full w-full gap-[30px]"
     >
-      <h1 className="font-light text-3xl font-heading text-afh-blue">
+      <h1 className="font-light text-3xl font-heading text-afh-blue text-center">
         Student Portal Login
       </h1>
       <hr className="border border-gray-300" />
@@ -119,7 +119,7 @@ export const LoginBody = () => {
           {formErrorMessage}
         </div>
       )}
-      <div className="flex justify-end">
+      <div className="flex justify-center sm:justify-end">
         <LoginButton isLoading={isLoading} />
       </div>
     </form>
@@ -128,7 +128,7 @@ export const LoginBody = () => {
 
 const SignUpSection = () => {
   return (
-    <p className="font-secondary font-light text-lg text-gray-700">
+    <p className="font-secondary font-light text-lg text-gray-700 text-center">
       Don't have an account yet? Sign up{' '}
       <Link href={'/sign-up'}>
         <span className="underline font-semibold text-afh-orange">here</span>

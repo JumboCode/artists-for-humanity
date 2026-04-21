@@ -6,6 +6,7 @@ type Artwork = {
   title: string
   description: string | null
   image_url: string
+  thumbnail_url: string | null
   tools_used: string[]
   project_type: string | null
   submitted_by_name: string | null
@@ -21,6 +22,7 @@ type Artwork = {
 
 type Props = {
   artwork: Artwork
+  onOpen: () => void
   onApprove: () => void
   onReject: () => void
   onFeature?: () => void
@@ -29,45 +31,78 @@ type Props = {
 
 export default function ArtworkCard({
   artwork,
+  onOpen,
   onApprove,
   onReject,
   onFeature,
   showFeatureButton = false,
 }: Readonly<Props>) {
   const [imageError, setImageError] = useState(false)
+  const previewUrl = artwork.thumbnail_url || artwork.image_url
+  const isVideo = /\.(mp4|webm|mov|quicktime)(\?|$)/i.test(artwork.image_url)
   // Determine the artist name
+  const isGuestUpload = !artwork.author
   const artistName =
     artwork.author?.profile?.display_name ||
     artwork.author?.username ||
     artwork.submitted_by_name ||
     'Guest'
 
-  const isGuestUpload = !artwork.author
+  let previewContent: React.ReactNode
+  if (imageError) {
+    previewContent = (
+      <div className="w-full h-full flex items-center justify-center bg-gray-200">
+        <div className="text-center p-4">
+          <svg className="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z" />
+          </svg>
+          <p className="text-xs text-gray-500 font-secondary">Preview unavailable</p>
+        </div>
+      </div>
+    )
+  } else if (isVideo) {
+    previewContent = (
+      <video
+        src={artwork.image_url}
+        poster={previewUrl || undefined}
+        className="w-full h-full object-cover"
+        muted
+        playsInline
+        preload="metadata"
+      >
+        <track kind="captions" label="English captions" />
+      </video>
+    )
+  } else {
+    previewContent = (
+      <Image
+        src={previewUrl}
+        alt={artwork.title}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        onError={() => setImageError(true)}
+      />
+    )
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Image */}
-      <div className="relative w-full h-64 bg-gray-100">
-        {!imageError ? (
-          <Image
-            src={artwork.image_url}
-            alt={artwork.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <div className="text-center p-4">
-              <svg className="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-xs text-gray-500 font-secondary">Image unavailable</p>
-            </div>
-          </div>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="relative w-full h-64 overflow-hidden bg-gray-100 text-left"
+        aria-label={`Open details for ${artwork.title}`}
+      >
+        {previewContent}
+        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/35" />
+        <div className="absolute inset-x-0 bottom-0 translate-y-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-4 text-white">
+          <p className="text-xs uppercase tracking-[0.15em] text-white/80 font-secondary">
+            Click to review details
+          </p>
+        </div>
+      </button>
 
       {/* Content */}
       <div className="p-4">
