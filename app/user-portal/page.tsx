@@ -226,8 +226,16 @@ export default function UserPortal() {
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    // Check display name
     if (!form.display_name.trim()) {
       alert('Display name is required')
+      return
+    }
+
+    // Check Instagram
+    if (form.instagram && !/^[a-zA-Z0-9._]+$/.test(form.instagram)) {
+      alert('Invalid Instagram username')
       return
     }
 
