@@ -23,19 +23,23 @@ type Artwork = {
 type Props = {
   artwork: Artwork
   onOpen: () => void
+  onEdit?: () => void
   onApprove: () => void
   onReject: () => void
   onFeature?: () => void
   showFeatureButton?: boolean
+  showEditButton?: boolean
 }
 
 export default function ArtworkCard({
   artwork,
   onOpen,
+  onEdit,
   onApprove,
   onReject,
   onFeature,
   showFeatureButton = false,
+  showEditButton = false,
 }: Readonly<Props>) {
   const [imageError, setImageError] = useState(false)
   const previewUrl = artwork.thumbnail_url || artwork.image_url
@@ -87,7 +91,7 @@ export default function ArtworkCard({
   }
 
   return (
-    <div className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="group h-full bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
       {/* Image */}
       <button
         type="button"
@@ -105,9 +109,9 @@ export default function ArtworkCard({
       </button>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex flex-1 flex-col text-center sm:text-left">
         {/* Title and Artist */}
-        <div className="mb-3">
+        <div className="mb-3 min-h-[56px]">
           <h3 className="text-lg font-heading font-semibold text-afh-blue line-clamp-2">
             {artwork.title}
           </h3>
@@ -120,25 +124,22 @@ export default function ArtworkCard({
         </div>
 
         {/* Description */}
-        {artwork.description && (
-          <p className="text-sm text-gray-700 font-secondary mb-3 line-clamp-2">
-            {artwork.description}
-          </p>
-        )}
+        <p className="text-sm text-gray-700 font-secondary mb-3 line-clamp-2 min-h-[40px]">
+          {artwork.description?.trim() || 'No description provided'}
+        </p>
 
         {/* Metadata */}
-        <div className="space-y-1 mb-4 text-xs text-gray-500 font-secondary">
-          {artwork.project_type && (
-            <p>
-              <span className="font-medium">Type:</span> {artwork.project_type}
-            </p>
-          )}
+        <div className="space-y-1 text-xs text-gray-500 font-secondary">
           {artwork.tools_used && artwork.tools_used.length > 0 && (
             <p>
               <span className="font-medium">Tools:</span>{' '}
               {artwork.tools_used.join(', ')}
             </p>
           )}
+          <p>
+            <span className="font-medium">Type:</span>{' '}
+            {artwork.project_type || 'none'}
+          </p>
           {isGuestUpload && artwork.submitted_by_email && (
             <p>
               <span className="font-medium">Email:</span>{' '}
@@ -152,27 +153,40 @@ export default function ArtworkCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={onApprove}
-            className="flex-1 min-w-[80px] bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
-          >
-            Approve
-          </button>
-          <button
-            onClick={onReject}
-            className="flex-1 min-w-[80px] bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
-          >
-            Reject
-          </button>
-          {showFeatureButton && onFeature && (
+        <div className="mt-auto pt-4">
+          <div className="flex flex-wrap justify-center gap-2 sm:grid sm:grid-cols-3">
+            {showEditButton && onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit()
+                }}
+                className="w-[160px] sm:w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
+              >
+                Edit
+              </button>
+            )}
             <button
-              onClick={onFeature}
-              className="flex-1 min-w-[80px] bg-afh-orange text-white px-3 py-2 rounded-lg hover:bg-opacity-90 font-secondary text-sm font-medium transition-colors"
+              onClick={onApprove}
+              className="w-[160px] sm:w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
             >
-              Feature
+              Approve
             </button>
-          )}
+            <button
+              onClick={onReject}
+              className="w-[160px] sm:w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
+            >
+              Reject
+            </button>
+            {showFeatureButton && onFeature && (
+              <button
+                onClick={onFeature}
+                className="w-[160px] sm:w-full bg-afh-orange text-white px-3 py-2 rounded-lg hover:bg-opacity-90 font-secondary text-sm font-medium transition-colors"
+              >
+                Feature
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

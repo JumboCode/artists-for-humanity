@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/admin/queue
- * Returns artworks for admin moderation and edits across statuses
+ * Returns pending artworks for admin moderation
  */
 export async function GET() {
   // Check if user is authenticated and is an admin
@@ -22,8 +22,11 @@ export async function GET() {
   }
 
   try {
-    // Fetch artworks across statuses with author details
+    // Fetch pending artworks with author details
     const artworks = await prisma.artwork.findMany({
+      where: {
+        status: 'PENDING',
+      },
       select: {
         id: true,
         title: true,
@@ -52,16 +55,8 @@ export async function GET() {
       },
     })
 
-    const counts = {
-      total: artworks.length,
-      pending: artworks.filter((art) => art.status === 'PENDING').length,
-      approved: artworks.filter((art) => art.status === 'APPROVED').length,
-      rejected: artworks.filter((art) => art.status === 'REJECTED').length,
-    }
-
     return NextResponse.json({
       count: artworks.length,
-      counts,
       artworks,
     })
   } catch (error: any) {

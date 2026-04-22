@@ -2,6 +2,19 @@
 import { useEffect, useState } from 'react'
 import ArtworkCard from './ArtworkCard'
 
+const TOOL_OPTIONS = [
+  'Digital Art',
+  'Painting',
+  'Photography',
+  'Mixed Media',
+  'Sculpture',
+  'Drawing',
+  'Printmaking',
+  'Video',
+  'Installation',
+  'Other',
+]
+
 type Artwork = {
   id: string
   title: string
@@ -25,7 +38,7 @@ type Artwork = {
 type ArtworkEditForm = {
   title: string
   description: string
-  tools_used: string
+  tools_used: string[]
   project_type: string
   submitted_by_name: string
   submitted_by_email: string
@@ -33,7 +46,6 @@ type ArtworkEditForm = {
 
 export function AdminDashboard() {
   const [artworks, setArtworks] = useState<Artwork[]>([])
-  const [activeTab, setActiveTab] = useState<'ALL' | 'PUBLISHED' | 'DRAFTS'>('ALL')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -49,11 +61,12 @@ export function AdminDashboard() {
   const [editForm, setEditForm] = useState<ArtworkEditForm>({
     title: '',
     description: '',
-    tools_used: '',
+    tools_used: [],
     project_type: '',
     submitted_by_name: '',
     submitted_by_email: '',
   })
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false)
 
   useEffect(() => {
     fetchQueue()
@@ -135,10 +148,11 @@ export function AdminDashboard() {
   function openEditModal(artwork: Artwork) {
     setEditFormError(null)
     setEditingArtwork(artwork)
+    setIsToolsDropdownOpen(false)
     setEditForm({
       title: artwork.title || '',
       description: artwork.description || '',
-      tools_used: artwork.tools_used.join(', '),
+      tools_used: artwork.tools_used || [],
       project_type: artwork.project_type || '',
       submitted_by_name: artwork.submitted_by_name || '',
       submitted_by_email: artwork.submitted_by_email || '',
@@ -148,6 +162,30 @@ export function AdminDashboard() {
   function closeEditModal() {
     setEditingArtwork(null)
     setEditFormError(null)
+    setIsToolsDropdownOpen(false)
+  }
+
+  function toggleToolSelection(tool: string) {
+    setEditForm((prev) => {
+      const isSelected = prev.tools_used.includes(tool)
+      if (isSelected) {
+        return {
+          ...prev,
+          tools_used: prev.tools_used.filter((item) => item !== tool),
+        }
+      }
+
+      if (prev.tools_used.length >= 3) {
+        setEditFormError('You can select up to 3 tools.')
+        return prev
+      }
+
+      setEditFormError(null)
+      return {
+        ...prev,
+        tools_used: [...prev.tools_used, tool],
+      }
+    })
   }
 
   async function handleSaveEdit() {
@@ -165,10 +203,7 @@ export function AdminDashboard() {
       const edits = {
         title: editForm.title.trim(),
         description: editForm.description.trim() || null,
-        tools_used: editForm.tools_used
-          .split(',')
-          .map(tool => tool.trim())
-          .filter(Boolean),
+        tools_used: editForm.tools_used,
         project_type: editForm.project_type.trim() || null,
         submitted_by_name: editForm.submitted_by_name.trim() || null,
         submitted_by_email: editForm.submitted_by_email.trim() || null,
@@ -192,7 +227,6 @@ export function AdminDashboard() {
               title: edits.title,
               description: edits.description,
               tools_used: edits.tools_used,
-              project_type: edits.project_type,
               submitted_by_name: edits.submitted_by_name,
               submitted_by_email: edits.submitted_by_email,
             }
@@ -207,7 +241,6 @@ export function AdminDashboard() {
                 title: edits.title,
                 description: edits.description,
                 tools_used: edits.tools_used,
-                project_type: edits.project_type,
                 submitted_by_name: edits.submitted_by_name,
                 submitted_by_email: edits.submitted_by_email,
               }
@@ -276,12 +309,6 @@ export function AdminDashboard() {
     )
   }
 
-  const filteredArtworks = artworks.filter((artwork) => {
-    if (activeTab === 'PUBLISHED') return artwork.status === 'APPROVED'
-    if (activeTab === 'DRAFTS') return artwork.status !== 'APPROVED'
-    return true
-  })
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -325,56 +352,34 @@ export function AdminDashboard() {
         </div>
       )}
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('ALL')}
-          className={`rounded-full border px-4 py-2 text-sm font-secondary transition-colors ${
-            activeTab === 'ALL'
-              ? 'border-afh-orange bg-afh-orange text-white'
-              : 'border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white'
-          }`}
-        >
-          All
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('PUBLISHED')}
-          className={`rounded-full border px-4 py-2 text-sm font-secondary transition-colors ${
-            activeTab === 'PUBLISHED'
-              ? 'border-afh-orange bg-afh-orange text-white'
-              : 'border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white'
-          }`}
-        >
-          Published
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('DRAFTS')}
-          className={`rounded-full border px-4 py-2 text-sm font-secondary transition-colors ${
-            activeTab === 'DRAFTS'
-              ? 'border-afh-orange bg-afh-orange text-white'
-              : 'border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white'
-          }`}
-        >
-          Drafts
-        </button>
+      <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-heading text-afh-blue">Incoming Pending Drafts</h2>
+          <p className="mt-1 text-sm text-gray-600 font-secondary">
+            Review new submissions waiting for approval.
+          </p>
+        </div>
+        <div className="rounded-full border border-afh-orange/40 bg-afh-orange/10 px-4 py-2 text-sm font-secondary text-afh-orange">
+          {artworks.length} pending
+        </div>
       </div>
 
-      {filteredArtworks.length === 0 ? (
+      {artworks.length === 0 ? (
         <div className="flex items-center justify-center py-10">
           <p className="text-gray-600 font-secondary">No artwork in this view.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredArtworks.map(artwork => (
+          {artworks.map(artwork => (
           <ArtworkCard
             key={artwork.id}
             artwork={artwork}
             onOpen={() => setSelectedArtwork(artwork)}
+            onEdit={() => openEditModal(artwork)}
             onApprove={() => handleApprove(artwork)}
             onReject={() => openRejectModal(artwork)}
             showFeatureButton={false}
+            showEditButton
           />
           ))}
         </div>
@@ -407,26 +412,18 @@ export function AdminDashboard() {
               {renderArtworkPreview(selectedArtwork)}
             </div>
 
-            {selectedArtwork.description && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Description</p>
-                <p className="text-sm text-gray-600 font-secondary whitespace-pre-wrap">
-                  {selectedArtwork.description}
-                </p>
-              </div>
-            )}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-1">Description</p>
+              <p className="text-sm text-gray-600 font-secondary whitespace-pre-wrap">
+                {selectedArtwork.description?.trim() || 'No description provided'}
+              </p>
+            </div>
 
             <div className="space-y-1 text-sm text-gray-600 font-secondary">
               <p>
                 <span className="font-medium text-gray-700">Status:</span>{' '}
                 {selectedArtwork.status}
               </p>
-              {selectedArtwork.project_type && (
-                <p>
-                  <span className="font-medium text-gray-700">Type:</span>{' '}
-                  {selectedArtwork.project_type}
-                </p>
-              )}
               {selectedArtwork.tools_used.length > 0 && (
                 <p>
                   <span className="font-medium text-gray-700">Tools:</span>{' '}
@@ -445,7 +442,7 @@ export function AdminDashboard() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => openEditModal(selectedArtwork)}
@@ -540,7 +537,7 @@ export function AdminDashboard() {
                 type="text"
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
 
@@ -549,18 +546,47 @@ export function AdminDashboard() {
               <textarea
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="mt-1 w-full min-h-[96px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                className="mt-1 w-full min-h-[96px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
 
             <label className="block text-sm font-secondary text-gray-700">
-              <span>Tools (comma separated)</span>
-              <input
-                type="text"
-                value={editForm.tools_used}
-                onChange={(e) => setEditForm({ ...editForm, tools_used: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
-              />
+              <span>Tools (select up to 3)</span>
+              <div className="relative mt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsToolsDropdownOpen((prev) => !prev)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-gray-900 focus:!border-afh-orange focus:outline-none"
+                >
+                  {editForm.tools_used.length > 0
+                    ? editForm.tools_used.join(', ')
+                    : 'Select tools...'}
+                </button>
+                {isToolsDropdownOpen && (
+                  <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                    {TOOL_OPTIONS.map((tool) => {
+                      const checked = editForm.tools_used.includes(tool)
+                      const disabled = !checked && editForm.tools_used.length >= 3
+
+                      return (
+                        <label
+                          key={tool}
+                          className={`flex items-center gap-2 rounded-md px-2 py-2 text-sm ${disabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={disabled}
+                            onChange={() => toggleToolSelection(tool)}
+                            className="h-4 w-4 rounded border-gray-300 text-afh-orange focus:ring-afh-orange"
+                          />
+                          <span>{tool}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </label>
 
             <label className="block text-sm font-secondary text-gray-700">
@@ -569,7 +595,7 @@ export function AdminDashboard() {
                 type="text"
                 value={editForm.project_type}
                 onChange={(e) => setEditForm({ ...editForm, project_type: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
 
@@ -579,7 +605,7 @@ export function AdminDashboard() {
                 type="text"
                 value={editForm.submitted_by_name}
                 onChange={(e) => setEditForm({ ...editForm, submitted_by_name: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
 
@@ -589,7 +615,7 @@ export function AdminDashboard() {
                 type="email"
                 value={editForm.submitted_by_email}
                 onChange={(e) => setEditForm({ ...editForm, submitted_by_email: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
           </div>
@@ -646,7 +672,7 @@ function ModalButtons({
   confirmDisabled?: boolean
 }>) {
   return (
-    <div className="flex justify-end gap-3 mt-6">
+    <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-end">
       <button
         className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-secondary transition-colors"
         onClick={onCancel}

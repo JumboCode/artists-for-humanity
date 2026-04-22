@@ -3,21 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-
-// School and year options
-const schoolSuggestions = [
-  'Tufts University',
-  'Harvard University',
-  'MIT',
-  'Suffolk University',
-  'Boston University',
-  'Northeastern University',
-  'Emerson College',
-  'UMass Boston',
-  'Boston College',
-]
-const currentYear = new Date().getFullYear()
-const graduationYears = Array.from({ length: 9 }, (_, i) => String(currentYear + i))
+import Cropper, { Area } from 'react-easy-crop'
 
 type Profile = {
   display_name: string
@@ -49,8 +35,85 @@ type ArtworkEditForm = {
   project_type: string
 }
 
+type CropMode = 'profile' | 'banner'
+
 function isVideoAsset(url: string) {
   return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url) || /\/video\/upload\//i.test(url)
+}
+
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new window.Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = src
+  })
+}
+
+async function getCroppedImageBlob(
+  imageSrc: string,
+  pixelCrop: Area,
+  outputWidth: number,
+  outputHeight: number
+): Promise<Blob> {
+  const image = await loadImage(imageSrc)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+
+  if (!ctx) {
+    throw new Error('Could not process image crop.')
+  }
+
+  canvas.width = outputWidth
+  canvas.height = outputHeight
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    outputWidth,
+    outputHeight
+  )
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Failed to export cropped image.'))
+        return
+      }
+      resolve(blob)
+    }, 'image/jpeg', 0.92)
+  })
+}
+
+async function uploadCroppedImageToCloudinary(
+  blob: Blob,
+  folder: 'profile-images' | 'banner-images'
+) {
+  const formData = new FormData()
+  const fileName = folder === 'profile-images' ? 'profile.jpg' : 'banner.jpg'
+  formData.append('file', new File([blob], fileName, { type: 'image/jpeg' }))
+  formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'afh-upload')
+  formData.append('folder', folder)
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to upload cropped image')
+  }
+
+  const data = await response.json()
+  return data.secure_url as string
 }
 
 function renderArtworkStatusAction(
@@ -109,7 +172,7 @@ function UserArtworkCard({ art, onOpen }: Readonly<UserArtworkCardProps>) {
     <button
       type="button"
       onClick={() => onOpen(art)}
-      className="card card-hover group bg-white flex w-full flex-col gap-[10px] text-left"
+      className="card card-hover group bg-white flex w-full flex-col gap-[10px] text-center sm:text-left"
       aria-label={`Open details for ${art.title}`}
     >
       <div className="relative overflow-hidden rounded-lg">
@@ -141,10 +204,10 @@ function UserArtworkCard({ art, onOpen }: Readonly<UserArtworkCardProps>) {
         </div>
       </div>
 
-      <div className="p-2 flex flex-col gap-1">
+      <div className="p-2 flex flex-col gap-1 items-center sm:items-start">
         <p className="font-medium text-[14px]">{art.title}</p>
         <p className="text-[12px] text-gray-600">
-          {art.tools_used.join(', ') || art.project_type || 'Artwork'}
+          {art.tools_used.join(', ') || art.project_type || 'none'}
         </p>
       </div>
     </button>
@@ -175,6 +238,12 @@ export default function UserPortal() {
   const [isSavingArtwork, setIsSavingArtwork] = useState(false)
   const [isUpdatingArtworkState, setIsUpdatingArtworkState] = useState(false)
   const [artworkEditError, setArtworkEditError] = useState<string | null>(null)
+  const [cropMode, setCropMode] = useState<CropMode | null>(null)
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [isApplyingCrop, setIsApplyingCrop] = useState(false)
   const [artworkEditForm, setArtworkEditForm] = useState<ArtworkEditForm>({
     title: '',
     description: '',
@@ -250,6 +319,72 @@ export default function UserPortal() {
     }
   }
 
+  function openCropper(file: File, mode: CropMode) {
+    const objectUrl = URL.createObjectURL(file)
+    setCropMode(mode)
+    setCropImageSrc(objectUrl)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
+  }
+
+  function closeCropper() {
+    if (cropImageSrc?.startsWith('blob:')) {
+      URL.revokeObjectURL(cropImageSrc)
+    }
+    setCropMode(null)
+    setCropImageSrc(null)
+    setCroppedAreaPixels(null)
+    setZoom(1)
+  }
+
+  const onCropComplete = (_: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels)
+  }
+
+  async function applyCropAndUpload() {
+    if (!cropImageSrc || !cropMode || !croppedAreaPixels) return
+
+    const isProfileCrop = cropMode === 'profile'
+    if (isProfileCrop) {
+      setUploadingImage(true)
+    } else {
+      setUploadingBanner(true)
+    }
+    setIsApplyingCrop(true)
+
+    try {
+      const blob = await getCroppedImageBlob(
+        cropImageSrc,
+        croppedAreaPixels,
+        isProfileCrop ? 600 : 1200,
+        isProfileCrop ? 600 : 300
+      )
+
+      const imageUrl = await uploadCroppedImageToCloudinary(
+        blob,
+        isProfileCrop ? 'profile-images' : 'banner-images'
+      )
+
+      if (isProfileCrop) {
+        setForm({ ...form, profile_image_url: imageUrl })
+        setImagePreview(imageUrl)
+      } else {
+        setForm({ ...form, banner_image_url: imageUrl })
+        setBannerPreview(imageUrl)
+      }
+
+      closeCropper()
+    } catch (error) {
+      console.error('Error applying crop:', error)
+      alert('Failed to process image. Please try again.')
+    } finally {
+      setIsApplyingCrop(false)
+      setUploadingImage(false)
+      setUploadingBanner(false)
+    }
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -266,38 +401,8 @@ export default function UserPortal() {
       return
     }
 
-    setUploadingImage(true)
-
-    try {
-      // Create FormData for upload
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'afh-upload')
-      formData.append('folder', 'profile-images')
-
-      // Upload to Cloudinary
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      )
-
-      if (!response.ok) throw new Error('Failed to upload image')
-
-      const data = await response.json()
-      const imageUrl = data.secure_url
-
-      // Update form state and preview
-      setForm({ ...form, profile_image_url: imageUrl })
-      setImagePreview(imageUrl)
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      alert('Failed to upload image. Please try again.')
-    } finally {
-      setUploadingImage(false)
-    }
+    openCropper(file, 'profile')
+    e.target.value = ''
   }
 
   async function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -316,38 +421,8 @@ export default function UserPortal() {
       return
     }
 
-    setUploadingBanner(true)
-
-    try {
-      // Create FormData for upload
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'afh-upload')
-      formData.append('folder', 'banner-images')
-
-      // Upload to Cloudinary
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      )
-
-      if (!response.ok) throw new Error('Failed to upload banner')
-
-      const data = await response.json()
-      const imageUrl = data.secure_url
-
-      // Update form state and preview
-      setForm({ ...form, banner_image_url: imageUrl })
-      setBannerPreview(imageUrl)
-    } catch (error) {
-      console.error('Error uploading banner:', error)
-      alert('Failed to upload banner. Please try again.')
-    } finally {
-      setUploadingBanner(false)
-    }
+    openCropper(file, 'banner')
+    e.target.value = ''
   }
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
@@ -377,7 +452,7 @@ export default function UserPortal() {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) throw new Error('Failed to update profile')
@@ -456,14 +531,16 @@ export default function UserPortal() {
     setArtworkEditError(null)
 
     try {
+      const toolsArray = artworkEditForm.tools_used
+        .split(',')
+        .map((tool) => tool.trim())
+        .filter((tool) => tool.length > 0)
+
       const payload = {
         title: artworkEditForm.title.trim(),
         description: artworkEditForm.description.trim(),
-        tools_used: artworkEditForm.tools_used
-          .split(',')
-          .map(tool => tool.trim())
-          .filter(Boolean),
-        project_type: artworkEditForm.project_type.trim(),
+        tools_used: toolsArray,
+        project_type: artworkEditForm.project_type.trim() || null,
       }
 
       const res = await fetch(`/api/artworks/${editingArtwork.id}`, {
@@ -482,8 +559,8 @@ export default function UserPortal() {
         ...editingArtwork,
         title: payload.title,
         description: payload.description || null,
+        tools_used: toolsArray,
         project_type: payload.project_type || null,
-        tools_used: payload.tools_used,
       }
 
       setSelectedArtwork(updatedArtwork)
@@ -782,16 +859,16 @@ export default function UserPortal() {
             )}
           </div>
 
-          <div className="flex flex-col gap-[20px] max-md:items-center">
+          <div className="flex flex-col gap-3 max-md:items-center items-center w-full">
             <button
               onClick={openEdit}
-              className="border-[1px] max-w-[169px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
+              className="border-[1px] w-full max-w-[220px] h-[43px] items-center justify-center text-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
             >
               Edit Profile Info
             </button>
             <button 
               onClick={navigateToUpload}
-              className="border-[1px] max-h-[43px] items-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex justify-start px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
+              className="border-[1px] w-full max-w-[220px] h-[43px] items-center justify-center text-center text-[20px] lg:text-[15px] md:text-[15px] max-md:text-[15px] btn-outline rounded-full font-primary font-light inline-flex px-4 py-2 hover:bg-afh-orange hover:text-white transition-colors"
             >
               Upload a New Project
             </button>
@@ -800,7 +877,7 @@ export default function UserPortal() {
 
         {/* Gallery Section */}
         <div className="afh-section galery-section w-[70%] md:w-[55%] max-md:w-full max-md:items-center -translate-y-[30px] section-padding flex flex-col gap-[40px]">
-          <div className="flex gap-[25px] w-full border-b-2 h-auto">
+          <div className="flex w-full gap-[25px] border-b-2 h-auto justify-center md:justify-start">
             <button
               className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-black' : 'border-transparent'}`}
               onClick={() => setOnPublished(true)}
@@ -880,23 +957,14 @@ export default function UserPortal() {
           <div className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-auto rounded-2xl bg-white shadow-afh border border-gray-100">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
               <h3 className="text-xl font-heading text-afh-blue">{selectedArtwork.title}</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={openArtworkEdit}
-                  className="rounded-full border border-afh-orange px-4 py-1.5 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
-                >
-                  Edit Artwork
-                </button>
-                <button
-                  type="button"
-                  onClick={closeArtworkPreview}
-                  className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-                  aria-label="Close preview"
-                >
-                  ×
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={closeArtworkPreview}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                aria-label="Close preview"
+              >
+                ×
+              </button>
             </div>
 
             <div className="p-4 sm:p-6">
@@ -922,27 +990,25 @@ export default function UserPortal() {
                 )}
               </div>
 
-              <div className="mt-4 text-sm text-gray-600 font-secondary">
+              <div className="mt-4 text-sm text-gray-600 font-secondary text-center md:text-left">
                 <p>
                   Status: <span className="font-medium">{selectedArtwork.status}</span>
                 </p>
                 <p>
                   {selectedArtwork.tools_used.join(', ') || selectedArtwork.project_type || 'Artwork'}
                 </p>
+                {selectedArtwork.project_type && (
+                  <p className="text-xs">
+                    <span className="font-medium">Project Type:</span> {selectedArtwork.project_type}
+                  </p>
+                )}
                 {selectedArtwork.description && (
                   <p className="mt-2 whitespace-pre-wrap">{selectedArtwork.description}</p>
                 )}
                 <p className="mt-1">Created: {new Date(selectedArtwork.created_at).toLocaleDateString()}</p>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {renderArtworkStatusAction(
-                  selectedArtwork.status,
-                  isUpdatingArtworkState,
-                  handleRemoveFromGallery,
-                  handleSubmitDraft
-                )}
-
+              <div className="mt-5 flex flex-col md:flex-row gap-2 justify-center md:justify-between items-center md:items-start">
                 <button
                   type="button"
                   onClick={handleDeleteArtwork}
@@ -951,7 +1017,101 @@ export default function UserPortal() {
                 >
                   Delete Artwork
                 </button>
+
+                <div className="flex flex-col md:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={openArtworkEdit}
+                    className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                  >
+                    Edit Artwork
+                  </button>
+
+                  {renderArtworkStatusAction(
+                    selectedArtwork.status,
+                    isUpdatingArtworkState,
+                    handleRemoveFromGallery,
+                    handleSubmitDraft
+                  )}
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cropImageSrc && cropMode && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            onClick={closeCropper}
+            aria-label="Close crop modal"
+          />
+          <div className="relative z-10 w-full max-w-3xl rounded-2xl bg-white p-5 sm:p-6 shadow-afh border border-gray-100">
+            <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
+              <h3 className="text-xl font-heading text-afh-blue">
+                {cropMode === 'profile' ? 'Crop Profile Photo' : 'Crop Banner Image'}
+              </h3>
+              <button
+                type="button"
+                onClick={closeCropper}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                aria-label="Close crop modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="mt-3 text-sm text-gray-600 font-secondary">
+              Drag to move and use zoom to frame the crop.
+            </p>
+
+            <div className="relative mt-4 h-[340px] w-full overflow-hidden rounded-xl bg-gray-900">
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={cropMode === 'profile' ? 1 : 4}
+                cropShape={cropMode === 'profile' ? 'round' : 'rect'}
+                showGrid
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="flex flex-col gap-2 text-sm font-secondary text-gray-700">
+                <span>Zoom</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full accent-afh-orange"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeCropper}
+                className="rounded-full border border-gray-300 px-5 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyCropAndUpload}
+                disabled={isApplyingCrop}
+                className="rounded-full border border-afh-orange bg-afh-orange px-5 py-2 text-white transition-colors hover:bg-afh-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isApplyingCrop ? 'Applying...' : 'Apply Crop'}
+              </button>
             </div>
           </div>
         </div>
@@ -997,7 +1157,7 @@ export default function UserPortal() {
                   onChange={(e) =>
                     setArtworkEditForm({ ...artworkEditForm, title: e.target.value })
                   }
-                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:!border-afh-orange focus:outline-none"
                   required
                 />
               </label>
@@ -1009,7 +1169,7 @@ export default function UserPortal() {
                   onChange={(e) =>
                     setArtworkEditForm({ ...artworkEditForm, description: e.target.value })
                   }
-                  className="min-h-[110px] rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  className="min-h-[110px] rounded-md border border-gray-300 px-3 py-2 focus:!border-afh-orange focus:outline-none"
                 />
               </label>
 
@@ -1021,7 +1181,7 @@ export default function UserPortal() {
                   onChange={(e) =>
                     setArtworkEditForm({ ...artworkEditForm, tools_used: e.target.value })
                   }
-                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:!border-afh-orange focus:outline-none"
                   placeholder="Oil Paint, Procreate, Photoshop"
                 />
               </label>
@@ -1034,12 +1194,13 @@ export default function UserPortal() {
                   onChange={(e) =>
                     setArtworkEditForm({ ...artworkEditForm, project_type: e.target.value })
                   }
-                  className="h-11 rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+                  className="h-11 rounded-md border border-gray-300 px-3 focus:!border-afh-orange focus:outline-none"
+                  placeholder="Campaign, Client Work, Personal Project"
                 />
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-end">
               <button
                 type="button"
                 onClick={closeArtworkEdit}
@@ -1128,7 +1289,7 @@ export default function UserPortal() {
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   <label className="cursor-pointer px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm font-secondary">
-                    {uploadingBanner ? 'Uploading...' : 'Upload Header Banner'}
+                    {uploadingBanner ? 'Uploading...' : 'Upload Banner'}
                     <input
                       type="file"
                       accept="image/*"
@@ -1176,7 +1337,7 @@ export default function UserPortal() {
                   onChange={e =>
                     setForm({ ...form, display_name: e.target.value })
                   }
-                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                   required
                 />
               </label>
@@ -1187,7 +1348,7 @@ export default function UserPortal() {
                   value={form.bio || ''}
                   placeholder="Tell us about yourself..."
                   onChange={e => setForm({ ...form, bio: e.target.value })}
-                  className="mt-1 form-input rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 py-2 min-h-[80px]"
+                  className="mt-1 form-input rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 py-2 min-h-[80px] focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                 />
               </label>
 
@@ -1197,45 +1358,36 @@ export default function UserPortal() {
                   value={form.department || ''}
                   placeholder="Graphic Designer"
                   onChange={e => setForm({ ...form, department: e.target.value })}
-                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                 />
               </label>
 
-              <div className="flex gap-3">
-                <label className="flex-1 flex flex-col text-sm">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="flex flex-col text-sm">
                   <span className="form-label text-[13px]">School / High School</span>
                   <input
-                    list="school-suggestions"
+                    type="text"
                     value={form.school || ''}
                     onChange={e =>
                       setForm({ ...form, school: e.target.value })
                     }
-                    placeholder="Type or select your school"
-                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1"
+                    placeholder="Type your school name"
+                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1 focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                   />
-                  <datalist id="school-suggestions">
-                    {schoolSuggestions.map(s => (
-                      <option key={s} value={s} />
-                    ))}
-                  </datalist>
                 </label>
                 
-                <label className="flex-1 flex flex-col text-sm">
+                <label className="flex flex-col text-sm">
                   <span className="form-label text-[13px]">
                     Graduation Year
                   </span>
                   <input
-                    list="graduation-year-suggestions"
+                    type="text"
                     value={form.graduation_year || ''}
                     onChange={e => setForm({ ...form, graduation_year: e.target.value })}
-                    placeholder="Type or select year"
-                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1"
+                    placeholder="Type your graduation year"
+                    inputMode="numeric"
+                    className="form-input h-11 rounded-md border border-gray-200 px-3 bg-white w-full mt-1 focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                   />
-                  <datalist id="graduation-year-suggestions">
-                    {graduationYears.map(y => (
-                      <option key={y} value={y} />
-                    ))}
-                  </datalist>
                 </label>
               </div>
 
@@ -1247,10 +1399,16 @@ export default function UserPortal() {
                   value={form.instagram || ''}
                   placeholder="afhboston"
                   onChange={e =>
-                    setForm({ ...form, instagram: e.target.value })
+                    setForm({ ...form, instagram: e.target.value.replace(/\s+/g, '') })
                   }
-                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3"
+                  onBlur={e =>
+                    setForm({ ...form, instagram: e.target.value.trim().replace(/^@+/, '') })
+                  }
+                  className="mt-1 form-input h-11 rounded-md border border-gray-200 placeholder:italic placeholder:text-gray-400 px-3 focus:outline-none focus:!ring-2 focus:!ring-afh-orange focus:!border-afh-orange"
                 />
+                <span className="mt-1 text-xs text-gray-500 font-secondary">
+                  No spaces allowed. Example: afhboston
+                </span>
               </label>
             </div>
 

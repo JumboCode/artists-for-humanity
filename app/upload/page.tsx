@@ -30,6 +30,7 @@ export default function UploadPage() {
 
   const [formData, setFormData] = useState({
     title: '',
+    project_type: '',
     mediums: [] as string[],
     description: '',
     artistName: '', // For guest uploads
@@ -141,7 +142,7 @@ export default function UploadPage() {
   }
 
   const validate = () => {
-    const { title, description, artistName, email } = formData
+    const { title, project_type, description, artistName, email } = formData
 
     // Reset error fields
     setStatus('idle')
@@ -150,6 +151,11 @@ export default function UploadPage() {
     // Title
     if (title.length > 200) {
       addErrorMessage('title', 'Title cannot exceed 200 characters')
+    }
+
+    // Project Type
+    if (project_type.length > 120) {
+      addErrorMessage('project_type', 'Project type cannot exceed 120 characters')
     }
 
     // Artist Name (required for guests)
@@ -301,6 +307,7 @@ export default function UploadPage() {
   const resetGuestUploadForm = () => {
     setFormData({
       title: '',
+      project_type: '',
       mediums: [],
       description: '',
       artistName: '',
@@ -330,6 +337,7 @@ export default function UploadPage() {
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
+          project_type: formData.project_type.trim() || undefined,
           tools_used: formData.mediums.join(', '),
           image_base64: imageBase64,
           submitted_by_name: isGuest ? formData.artistName : undefined,
@@ -416,7 +424,7 @@ export default function UploadPage() {
             onChange={handleChange}
             placeholder=""
             required
-            className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border-0 border-b focus:!border-b-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
           />
           <label
             htmlFor="title"
@@ -432,7 +440,7 @@ export default function UploadPage() {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light cursor-pointer flex justify-between items-center group"
+              className="w-full border-0 border-b focus:!border-b-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none py-3 text-gray-900 bg-transparent text-lg font-light cursor-pointer flex justify-between items-center group"
             >
               <span
                 className={
@@ -488,6 +496,25 @@ export default function UploadPage() {
           </label>
         </div>
 
+        {/* Project Type */}
+        <div className="w-full">
+          <input
+            type="text"
+            id="project_type"
+            name="project_type"
+            value={formData.project_type}
+            onChange={handleChange}
+            placeholder=""
+            className={`w-full border-0 border-b focus:!border-b-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.project_type ? 'border-red-500' : 'border-gray-300'}`}
+          />
+          <label
+            htmlFor="project_type"
+            className={`block mt-2 text-sm font-light ${errors.project_type ? 'text-red-500' : 'text-gray-700'}`}
+          >
+            Project Type (optional)
+          </label>
+        </div>
+
         {/* Guest Upload Fields - Only show when not logged in */}
         {!session && (
           <>
@@ -501,7 +528,7 @@ export default function UploadPage() {
                 onChange={handleChange}
                 placeholder=""
                 required
-                className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.artistName ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border-0 border-b focus:!border-b-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.artistName ? 'border-red-500' : 'border-gray-300'}`}
               />
               <label
                 htmlFor="artistName"
@@ -521,7 +548,7 @@ export default function UploadPage() {
                 onChange={handleChange}
                 placeholder=""
                 required
-                className={`w-full border-0 border-b focus:border-afh-orange focus:outline-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border-0 border-b focus:!border-b-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none py-3 text-gray-900 bg-transparent text-lg font-light placeholder-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
               />
               <label
                 htmlFor="email"
@@ -542,7 +569,7 @@ export default function UploadPage() {
             onChange={handleChange}
             placeholder=""
             rows={4}
-            className="w-full border border-gray-300 rounded-lg focus:border-afh-orange focus:outline-none p-4 text-gray-900 bg-transparent text-base font-light placeholder-transparent resize-none"
+            className="w-full border border-gray-300 rounded-lg focus:!border-afh-orange focus:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none p-4 text-gray-900 bg-transparent text-base font-light placeholder-transparent resize-none"
           />
           <label
             htmlFor="description"
@@ -633,10 +660,6 @@ export default function UploadPage() {
               onChange={handleFileChange}
             />
           </section>
-
-          <p className="mt-6 text-gray-700 font-light text-base">
-            Choose the medium of your upload.
-          </p>
         </div>
 
         {/* Error Message */}

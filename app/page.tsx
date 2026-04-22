@@ -139,7 +139,6 @@ type ArtworkItem = {
   artistUsername?: string | null
   artistImage?: string | null
   createdAt?: string
-  viewCount?: number
 }
 
 const GALLERY_ITEMS_PER_PAGE = 12
@@ -445,14 +444,14 @@ function GalleryArtworkCard({
       )}
 
       <div className="px-2 pt-3 pb-2">
-        <div className="flex font-body font-light items-center justify-between flex-wrap gap-x-2 text-sm sm:text-base text-black">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row font-body font-light items-center justify-center sm:justify-between flex-wrap gap-x-2 gap-y-1 text-sm sm:text-base text-black text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
             <span className="font-semibold">{art.name}</span>
             <span className="text-gray-400 font-light">|</span>
             <span className="text-gray-600">{art.title}</span>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
+          <div className="flex items-center justify-center gap-2 flex-shrink-0 text-gray-500 text-xs sm:text-sm">
             <span>{art.medium}</span>
             <span className="text-gray-300">|</span>
             <span>{art.year}</span>
@@ -651,9 +650,7 @@ function ArtworkDescription({ description }: Readonly<{ description?: string | n
       ? `${preview.slice(0, maxPreviewLength).trimEnd()}...`
       : preview
 
-  return (
-    <p className="mt-2 text-sm text-gray-600 leading-relaxed">{shortPreview}</p>
-  )
+  return <p className="mt-2 text-sm text-gray-600 leading-relaxed text-center sm:text-left">{shortPreview}</p>
 }
 
 function formatArtworkDate(dateValue?: string) {
@@ -680,7 +677,6 @@ export default function HomePage() {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
   const [selectedArtwork, setSelectedArtwork] = useState<ArtworkItem | null>(null)
-  const [isArtworkDetailsLoading, setIsArtworkDetailsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [previewBgColor, setPreviewBgColor] = useState('#111111')
@@ -705,7 +701,6 @@ export default function HomePage() {
     artistUsername: item.author?.username || null,
     artistImage: item.author?.profile?.profile_image_url || null,
     createdAt: item.created_at,
-    viewCount: item.view_count || 0,
   })
 
   // Fetch real artwork from API
@@ -776,7 +771,6 @@ export default function HomePage() {
 
   const closeArtworkModal = () => {
     setSelectedArtwork(null)
-    setIsArtworkDetailsLoading(false)
   }
 
   useEffect(() => {
@@ -826,8 +820,7 @@ export default function HomePage() {
 
   const handleOpenArtwork = async (art: ArtworkItem) => {
     setPreviewBgColor('#111111')
-    setSelectedArtwork({ ...art, viewCount: undefined })
-    setIsArtworkDetailsLoading(true)
+    setSelectedArtwork(art)
 
     try {
       const res = await fetch(`/api/artworks/${art.id}`)
@@ -838,8 +831,6 @@ export default function HomePage() {
       setSelectedArtwork(updatedArtwork)
     } catch (error) {
       console.error('Error opening artwork details:', error)
-    } finally {
-      setIsArtworkDetailsLoading(false)
     }
   }
 
@@ -1269,7 +1260,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-7">
+                <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-7 text-center sm:text-left">
                   <div className="space-y-1.5">
                     <p className="text-sm text-gray-500">Artist</p>
                     <p className="mt-1 text-xl font-semibold text-gray-900">
@@ -1285,20 +1276,10 @@ export default function HomePage() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
                     <div className="rounded-2xl bg-gray-50 p-3">
                       <p className="text-xs uppercase tracking-wide text-gray-500">Year</p>
                       <p className="mt-1 text-gray-900">{selectedArtwork.year}</p>
-                    </div>
-                    <div className="rounded-2xl bg-gray-50 p-3">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">Views</p>
-                      <p className="mt-1 text-gray-900">
-                        {isArtworkDetailsLoading ? (
-                          <span className="inline-block h-4 w-10 rounded bg-gray-200 animate-pulse align-middle" />
-                        ) : (
-                          selectedArtwork.viewCount || 0
-                        )}
-                      </p>
                     </div>
                     <div className="rounded-2xl bg-gray-50 p-3">
                       <p className="text-xs uppercase tracking-wide text-gray-500">Created</p>
@@ -1326,7 +1307,7 @@ export default function HomePage() {
                       <h4 className="text-sm font-semibold text-gray-900 mb-2">
                         Tools Used
                       </h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                         {selectedArtwork.toolsUsed.map((tool) => (
                           <span
                             key={tool}
@@ -1349,14 +1330,14 @@ export default function HomePage() {
         <hr className="border-t-[1px] border-gray-400 my-[60px]" />
 
         {/* Call to Action */}
-        <section className="w-full text-center">
+        <section className="w-full pb-12 text-center sm:pb-0">
           <h2 className="mx-auto max-w-3xl text-black font-heading font-light leading-snug text-2xl sm:text-3xl md:text-4xl mb-6">
             Do you also want to showcase your art on our homepage? Upload your
             work below.
           </h2>
           <Link
             href="/upload"
-            className="afh-pill-control afh-pill-control-accent mx-auto min-w-[170px] gap-2 px-6 text-base"
+            className="afh-pill-control afh-pill-control-accent mx-auto mt-8 sm:mt-10 min-w-[170px] gap-2 px-6 text-base"
           >
             Upload Your Work
           </Link>
