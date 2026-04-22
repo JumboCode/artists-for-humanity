@@ -154,27 +154,27 @@ export default function ArtworkCard({
 
         {/* Action Buttons */}
         <div className="mt-auto pt-4">
-          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-3">
+          <div className="flex flex-wrap justify-center gap-2 sm:grid sm:grid-cols-3">
             {showEditButton && onEdit && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   onEdit()
                 }}
-                className="w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
+                className="w-[160px] sm:w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
               >
                 Edit
               </button>
             )}
             <button
               onClick={onApprove}
-              className="w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
+              className="w-[160px] sm:w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
             >
               Approve
             </button>
             <button
               onClick={onReject}
-              className="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
+              className="w-[160px] sm:w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
             >
               Reject
             </button>

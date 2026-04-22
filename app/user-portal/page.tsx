@@ -221,7 +221,7 @@ export default function UserPortal() {
   const [onPublished, setOnPublished] = useState(true)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [published, setPublished] = useState<Artwork[]>([])
-  const [pendingApproval, setPendingApproval] = useState<Artwork[]>([])
+  const [drafts, setDrafts] = useState<Artwork[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -304,7 +304,7 @@ export default function UserPortal() {
       if (!res.ok) throw new Error('Failed to fetch artwork')
       const data = await res.json()
       setPublished(data.published || [])
-      setPendingApproval(data.pending_approval || [])
+      setDrafts(data.drafts || [])
     } catch (error) {
       console.error('Error fetching artwork:', error)
     }
@@ -429,7 +429,6 @@ export default function UserPortal() {
     e.preventDefault()
     setProfileFeedback(null)
 
-    // Check display name
     if (!form.display_name.trim()) {
       setProfileFeedback({
         type: 'error',
@@ -438,13 +437,30 @@ export default function UserPortal() {
       return
     }
 
-    // Check Instagram
-    if (form.instagram && !/^[a-zA-Z0-9._]+$/.test(form.instagram)) {
+    const normalizedInstagram = form.instagram?.trim() || ''
+    if (/\s/.test(normalizedInstagram)) {
       setProfileFeedback({
         type: 'error',
-        message: 'Invalid Instagram handle',
+        message: 'Instagram username cannot contain spaces.',
       })
       return
+    }
+
+    const normalizedSchool = form.school?.trim() || ''
+    const normalizedGraduationYear = form.graduation_year?.trim() || ''
+    if (normalizedGraduationYear && !/^\d{4}$/.test(normalizedGraduationYear)) {
+      setProfileFeedback({
+        type: 'error',
+        message: 'Graduation year must be a 4-digit year.',
+      })
+      return
+    }
+
+    const payload: Profile = {
+      ...form,
+      school: normalizedSchool || null,
+      graduation_year: normalizedGraduationYear || null,
+      instagram: normalizedInstagram || null,
     }
 
     setIsSaving(true)
@@ -888,7 +904,7 @@ export default function UserPortal() {
               className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-transparent' : 'border-black'}`}
               onClick={() => setOnPublished(false)}
             >
-              Pending Approval
+              Pending
             </button>
           </div>
           {onPublished && (
@@ -934,7 +950,7 @@ export default function UserPortal() {
                 </button>
               </button>
               
-              {pendingApproval.map(art => (
+              {drafts.map(art => (
                 <UserArtworkCard
                   key={art.id}
                   art={art}
@@ -1412,7 +1428,7 @@ export default function UserPortal() {
               </label>
             </div>
 
-            <div className="mt-6 flex justify-center sm:justify-end gap-3">
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={cancelEdit}
