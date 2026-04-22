@@ -99,6 +99,7 @@ export default function UploadPage() {
     setErrors(prev => {
       const newErrors = { ...prev }
       delete newErrors[field]
+      setStatus(Object.keys(newErrors).length === 0 ? 'idle' : 'error')
       return newErrors
     })
   }
@@ -268,12 +269,20 @@ export default function UploadPage() {
       addErrorMessage('mediums', 'Please select at least one artwork medium')
       return false
     }
-
-    if (!formData.file) {
+    
+    // We need to check file existence before using it
+    const file = formData.file
+    if (!file) {
       addErrorMessage('file', 'Please upload a file')
       return false
     }
 
+    // Final form validation
+    if (Object.keys(errors).length > 0) {
+      return
+    }
+
+    // Guest upload validation
     if (isGuest) {
       if (!formData.artistName.trim()) {
         addErrorMessage('artistName', 'Artist name is required for guest uploads')
@@ -313,12 +322,6 @@ export default function UploadPage() {
     setIsSubmitting(true)
 
     try {
-      const file = formData.file
-      if (!file) {
-        addErrorMessage('file', 'Please upload a file')
-        return
-      }
-
       const imageBase64 = await fileToBase64(file)
 
       const response = await fetch('/api/artworks', {
@@ -333,6 +336,11 @@ export default function UploadPage() {
           submitted_by_email: isGuest ? formData.email : undefined,
         }),
       })
+      
+      if (response.status === 413) {
+        addErrorMessage('file', 'File size must be less than 10MB')
+        return
+      }
 
       if (!response.ok) {
         const error = await response.json()
@@ -354,10 +362,13 @@ export default function UploadPage() {
         }, 30000)
       }
     } catch (error) {
+      // Show to user as error message
       addErrorMessage(
         'upload',
         error instanceof Error ? error.message : 'Failed to upload artwork'
       )
+      // Print to console for debugging
+      console.error('Upload error:', error)
     } finally {
       setIsSubmitting(false)
     }
