@@ -442,11 +442,11 @@ export function AdminDashboard() {
               </p>
             </div>
 
-            <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
+            <div className="flex flex-col gap-2 pt-1 sm:grid sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => openEditModal(selectedArtwork)}
-                className="flex-1 min-w-[120px] border border-afh-orange text-afh-orange px-4 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
+                className="w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
               >
                 Edit
               </button>
@@ -455,14 +455,14 @@ export function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => handleApprove(selectedArtwork)}
-                    className="flex-1 min-w-[120px] bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
+                    className="w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
                   >
                     Approve
                   </button>
                   <button
                     type="button"
                     onClick={() => openRejectModal(selectedArtwork)}
-                    className="flex-1 min-w-[120px] bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
+                    className="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
                   >
                     Reject
                   </button>

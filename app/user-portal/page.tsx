@@ -1412,7 +1412,7 @@ export default function UserPortal() {
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex justify-center sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={cancelEdit}
