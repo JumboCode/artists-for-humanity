@@ -158,7 +158,7 @@ export default function UserPortal() {
   const [onPublished, setOnPublished] = useState(true)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [published, setPublished] = useState<Artwork[]>([])
-  const [drafts, setDrafts] = useState<Artwork[]>([])
+  const [pendingApproval, setPendingApproval] = useState<Artwork[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -235,7 +235,7 @@ export default function UserPortal() {
       if (!res.ok) throw new Error('Failed to fetch artwork')
       const data = await res.json()
       setPublished(data.published || [])
-      setDrafts(data.drafts || [])
+      setPendingApproval(data.pending_approval || [])
     } catch (error) {
       console.error('Error fetching artwork:', error)
     }
@@ -354,10 +354,20 @@ export default function UserPortal() {
     e.preventDefault()
     setProfileFeedback(null)
 
+    // Check display name
     if (!form.display_name.trim()) {
       setProfileFeedback({
         type: 'error',
         message: 'Display name is required',
+      })
+      return
+    }
+
+    // Check Instagram
+    if (form.instagram && !/^[a-zA-Z0-9._]+$/.test(form.instagram)) {
+      setProfileFeedback({
+        type: 'error',
+        message: 'Invalid Instagram handle',
       })
       return
     }
@@ -801,7 +811,7 @@ export default function UserPortal() {
               className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-transparent' : 'border-black'}`}
               onClick={() => setOnPublished(false)}
             >
-              Drafts
+              Pending Approval
             </button>
           </div>
           {onPublished && (
@@ -847,7 +857,7 @@ export default function UserPortal() {
                 </button>
               </button>
               
-              {drafts.map(art => (
+              {pendingApproval.map(art => (
                 <UserArtworkCard
                   key={art.id}
                   art={art}
