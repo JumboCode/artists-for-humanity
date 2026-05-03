@@ -112,6 +112,25 @@ export async function PATCH(
       if (edits.submitted_by_name !== undefined) updateData.submitted_by_name = edits.submitted_by_name
       if (edits.submitted_by_email !== undefined) updateData.submitted_by_email = edits.submitted_by_email
 
+      // If admin edits the submitter email, try to link artwork ownership to that user.
+      // This ensures the artwork appears in the matching user's portal immediately.
+      if (edits.submitted_by_email !== undefined) {
+        const normalizedEmail = String(edits.submitted_by_email || '').trim().toLowerCase()
+
+        if (normalizedEmail) {
+          const matchedUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+            select: { id: true },
+          })
+
+          updateData.submitted_by_email = normalizedEmail
+          updateData.user_id = matchedUser?.id ?? null
+        } else {
+          updateData.submitted_by_email = null
+          updateData.user_id = null
+        }
+      }
+
       if (Object.keys(updateData).length === 0) {
         return NextResponse.json(
           { message: 'No valid fields provided to edit' },
@@ -146,9 +165,42 @@ export async function PATCH(
         message: 'Artwork edited successfully',
         artwork: result,
       })
+    } else if (action === 'unpublish') {
+      // Move artwork back to PENDING, removing it from gallery and carousel
+      const result = await prisma.$transaction(async tx => {
+        const artwork = await tx.artwork.update({
+          where: { id },
+          data: {
+            status: 'PENDING',
+            featured: false,
+            approved_at: null,
+            approved_by_id: null,
+            rejection_reason: null,
+          },
+        })
+
+        await tx.adminAction.create({
+          data: {
+            action_type: 'ARTWORK_UNFEATURED',
+            admin_id: session.user.id,
+            artwork_id: id,
+            metadata: {
+              unpublished_at: new Date().toISOString(),
+              note: 'Moved back to pending by admin',
+            },
+          },
+        })
+
+        return artwork
+      })
+
+      return NextResponse.json({
+        message: 'Artwork moved back to pending',
+        artwork: result,
+      })
     } else {
       return NextResponse.json(
-        { message: 'Invalid action. Use "approve", "reject", or "edit"' },
+        { message: 'Invalid action. Use "approve", "reject", "edit", or "unpublish"' },
         { status: 400 }
       )
     }

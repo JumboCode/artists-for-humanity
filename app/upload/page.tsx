@@ -41,11 +41,17 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [draftNotice, setDraftNotice] = useState<string | null>(null)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [shouldOpenFilePicker, setShouldOpenFilePicker] = useState(false)
   const [countdown, setCountdown] = useState(30)
   const isGuest = !session
+
+  const getDraftStorageKey = () => {
+    const userId = session?.user?.id
+    return userId ? `upload-draft:${userId}` : null
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -61,6 +67,35 @@ export default function UploadPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    const key = getDraftStorageKey()
+    if (!key) return
+
+    const draftRaw = window.localStorage.getItem(key)
+    if (!draftRaw) return
+
+    try {
+      const draft = JSON.parse(draftRaw) as {
+        title?: string
+        project_type?: string
+        mediums?: string[]
+        description?: string
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        title: draft.title || '',
+        project_type: draft.project_type || '',
+        mediums: Array.isArray(draft.mediums) ? draft.mediums : [],
+        description: draft.description || '',
+      }))
+      setDraftNotice('Draft restored. Please re-attach your file before submitting.')
+    } catch {
+      window.localStorage.removeItem(key)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
 
   useEffect(() => {
     if (!shouldOpenFilePicker || !fileInputRef.current) return
@@ -275,17 +310,15 @@ export default function UploadPage() {
       addErrorMessage('mediums', 'Please select at least one artwork medium')
       return false
     }
-    
-    // We need to check file existence before using it
-    const file = formData.file
-    if (!file) {
+
+    if (!formData.file) {
       addErrorMessage('file', 'Please upload a file')
       return false
     }
 
     // Final form validation
     if (Object.keys(errors).length > 0) {
-      return
+      return false
     }
 
     // Guest upload validation
@@ -318,6 +351,33 @@ export default function UploadPage() {
     setStatus('idle')
   }
 
+  const saveDraft = () => {
+    const key = getDraftStorageKey()
+    if (!key) {
+      setDraftNotice('Create an account to save your draft and continue later.')
+      return
+    }
+
+    const draft = {
+      title: formData.title,
+      project_type: formData.project_type,
+      mediums: formData.mediums,
+      description: formData.description,
+      updatedAt: new Date().toISOString(),
+    }
+
+    window.localStorage.setItem(key, JSON.stringify(draft))
+    setDraftNotice('Draft saved in profile.')
+  }
+
+  const clearDraft = () => {
+    const key = getDraftStorageKey()
+    if (!key) return
+
+    window.localStorage.removeItem(key)
+    setDraftNotice('Saved draft cleared.')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus('idle')
@@ -326,9 +386,21 @@ export default function UploadPage() {
       return
     }
 
+    const file = formData.file
+    if (!file) {
+      addErrorMessage('file', 'Please upload a file')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
+      const file = formData.file
+      if (!file) {
+        addErrorMessage('file', 'Please upload a file')
+        return
+      }
+
       const imageBase64 = await fileToBase64(file)
 
       const response = await fetch('/api/artworks', {
@@ -359,6 +431,7 @@ export default function UploadPage() {
 
       // Handle post-upload based on user type
       if (session) {
+        clearDraft()
         // Redirect authenticated users after brief delay
         setTimeout(() => {
           router.push('/user-portal')
@@ -405,6 +478,20 @@ export default function UploadPage() {
         onSubmit={handleSubmit}
         className="w-full space-y-10 sm:space-y-12 animate-fade-in mx-auto"
       >
+        {draftNotice && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 animate-fade-in">
+            <p className="text-blue-700 font-light text-sm">{draftNotice}</p>
+          </div>
+        )}
+
+        {!session && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 animate-fade-in">
+            <p className="text-gray-700 font-light text-sm">
+              Saving upload drafts is available for account holders. Sign in or create an account to save progress mid-upload.
+            </p>
+          </div>
+        )}
+
         {/* Error Message */}
         {status === 'error' && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-fade-in">
@@ -738,13 +825,20 @@ export default function UploadPage() {
         )}
 
         {/* Submit Button */}
-        <div className="flex justify-center pt-6">
+        <div className="flex flex-col items-center gap-3 pt-6">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-full px-10 py-3 border-2 border-afh-orange text-afh-orange hover:bg-afh-orange hover:text-white text-lg font-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-56 rounded-full px-10 py-3 border-2 border-afh-orange text-afh-orange bg-white hover:bg-afh-orange hover:text-white text-lg font-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Uploading...' : 'Confirm Upload'}
+          </button>
+          <button
+            type="button"
+            onClick={saveDraft}
+            className="w-56 rounded-full px-10 py-3 border-2 border-afh-orange text-afh-orange bg-white hover:bg-afh-orange hover:text-white text-lg font-light transition-all"
+          >
+            Save Draft
           </button>
         </div>
       </form>

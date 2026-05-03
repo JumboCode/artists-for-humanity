@@ -9,6 +9,7 @@ import { Paper, Box, Typography, CircularProgress } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import { useSession } from 'next-auth/react'
 import { Trash2, Star, StarOff, X } from 'lucide-react'
+import ConfirmModal from '@/components/common/ConfirmModal'
 
 // Fallback mock data in case API fails
 const FALLBACK_ARTWORK: ArtworkItem[] = [
@@ -139,6 +140,7 @@ type ArtworkItem = {
   artistUsername?: string | null
   artistImage?: string | null
   createdAt?: string
+  ownerId?: string | null
 }
 
 const GALLERY_ITEMS_PER_PAGE = 12
@@ -332,6 +334,7 @@ type GalleryArtworkCardProps = {
   onOpen: (art: ArtworkItem) => void
   onDelete: (id: string) => void
   onToggleFeatured: (id: string) => void
+  onUnpublish: (id: string) => void
 }
 
 function GalleryArtworkCard({
@@ -340,6 +343,7 @@ function GalleryArtworkCard({
   onOpen,
   onDelete,
   onToggleFeatured,
+  onUnpublish,
 }: Readonly<GalleryArtworkCardProps>) {
   const [imgSrc, setImgSrc] = useState(art.image)
   const [hasError, setHasError] = useState(false)
@@ -349,10 +353,17 @@ function GalleryArtworkCard({
 
   return (
     <div className="bg-white shadow-none relative group">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onOpen(art)}
-        className="w-full text-left focus:outline-none"
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen(art)
+          }
+        }}
+        className="w-full text-left focus:outline-none cursor-pointer"
         aria-label={`Open details for ${art.title}`}
       >
         <div className="w-full image-hover animate-slide-up flex items-center justify-center overflow-hidden rounded-lg relative">
@@ -390,9 +401,19 @@ function GalleryArtworkCard({
 
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300" />
             <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-4 text-white">
-              <p className="text-sm font-semibold uppercase tracking-wide text-white opacity-90">
-                {art.name}
-              </p>
+              {art.artistUsername ? (
+                <Link
+                  href={`/profiles/${art.artistUsername}`}
+                  onClick={(event) => event.stopPropagation()}
+                  className="inline-block text-sm font-semibold uppercase tracking-wide text-white opacity-90 underline-offset-4 hover:underline"
+                >
+                  {art.name}
+                </Link>
+              ) : (
+                <p className="text-sm font-semibold uppercase tracking-wide text-white opacity-90">
+                  {art.name}
+                </p>
+              )}
               <h3 className="text-lg font-heading font-light mt-1 text-white">
                 {art.title}
               </h3>
@@ -408,7 +429,7 @@ function GalleryArtworkCard({
             </div>
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Admin Controls Overlay */}
       {isAdmin && (
@@ -427,6 +448,18 @@ function GalleryArtworkCard({
             ) : (
               <Star size={20} className="text-gray-600 hover:text-yellow-500" />
             )}
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onUnpublish(art.id)
+            }}
+            className="px-2 py-1 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 text-xs font-medium text-gray-700"
+            title="Move to pending"
+            aria-label="Move artwork to pending"
+          >
+            Move to Pending
           </button>
 
           <button
@@ -470,6 +503,7 @@ function HeroCarouselSlide({
   onOpen,
   onDelete,
   onToggleFeatured,
+  onUnpublish,
   isActive,
 }: Readonly<GalleryArtworkCardProps & { isActive: boolean }>) {
   const [imgSrc, setImgSrc] = useState(art.image)
@@ -593,6 +627,18 @@ function HeroCarouselSlide({
           <button
             onClick={(e) => {
               e.stopPropagation()
+              onUnpublish(art.id)
+            }}
+            className="px-2 py-1 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 text-xs font-medium text-gray-700"
+            title="Move to pending"
+            aria-label="Move artwork to pending"
+          >
+            Move to Pending
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
               onDelete(art.id)
             }}
             className="p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-200 hover:scale-110"
@@ -668,6 +714,7 @@ function formatArtworkDate(dateValue?: string) {
 export default function HomePage() {
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === 'ADMIN'
+  const currentUserId = session?.user?.id || null
   
   const [searchQuery, setSearchQuery] = useState('')
   const [artwork, setArtwork] = useState<ArtworkItem[]>([])
@@ -680,6 +727,23 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [previewBgColor, setPreviewBgColor] = useState('#111111')
+  const [pendingDeleteArtworkId, setPendingDeleteArtworkId] = useState<string | null>(null)
+  const [pendingUnpublishArtworkId, setPendingUnpublishArtworkId] = useState<string | null>(null)
+  const [isDeletingArtwork, setIsDeletingArtwork] = useState(false)
+  const [isUnpublishingArtwork, setIsUnpublishingArtwork] = useState(false)
+  const [isEditArtworkModalOpen, setIsEditArtworkModalOpen] = useState(false)
+  const [isOwnerEditConfirmOpen, setIsOwnerEditConfirmOpen] = useState(false)
+  const [isSavingArtworkEdit, setIsSavingArtworkEdit] = useState(false)
+  const [artworkEditForm, setArtworkEditForm] = useState({
+    title: '',
+    description: '',
+    projectType: '',
+    toolsUsed: '',
+  })
+  const [actionNotice, setActionNotice] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
   const previewImageRef = useRef<HTMLImageElement>(null)
   const filterDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -701,12 +765,23 @@ export default function HomePage() {
     artistUsername: item.author?.username || null,
     artistImage: item.author?.profile?.profile_image_url || null,
     createdAt: item.created_at,
+    ownerId: item.user_id || null,
   })
 
   // Fetch real artwork from API
   useEffect(() => {
     fetchArtwork()
   }, [])
+
+  useEffect(() => {
+    if (!actionNotice) return
+
+    const timeoutId = window.setTimeout(() => {
+      setActionNotice(null)
+    }, 4000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [actionNotice])
 
   const fetchArtwork = async () => {
     try {
@@ -732,24 +807,55 @@ export default function HomePage() {
     }
   }
 
-  const handleDelete = async (artworkId: string) => {
-    if (!confirm('Are you sure you want to delete this artwork? This action cannot be undone.')) {
+  const handleDelete = (artworkId: string) => {
+    setPendingDeleteArtworkId(artworkId)
+  }
+
+  const handleUnpublish = (artworkId: string) => {
+    setPendingUnpublishArtworkId(artworkId)
+  }
+
+  const confirmDeleteArtwork = async () => {
+    if (!pendingDeleteArtworkId) return
+
+    const targetArtwork = allArtwork.find((item) => item.id === pendingDeleteArtworkId)
+    const isOwner = Boolean(targetArtwork && currentUserId && targetArtwork.ownerId === currentUserId)
+
+    if (!isAdmin && !isOwner) {
+      setActionNotice({
+        type: 'error',
+        message: 'You can only delete your own artwork.',
+      })
+      setPendingDeleteArtworkId(null)
       return
     }
 
+    setIsDeletingArtwork(true)
     try {
-      const res = await fetch(`/api/admin/artworks/${artworkId}`, {
+      const endpoint = isAdmin
+        ? `/api/admin/artworks/${pendingDeleteArtworkId}`
+        : `/api/artworks/${pendingDeleteArtworkId}`
+
+      const res = await fetch(endpoint, {
         method: 'DELETE',
       })
 
       if (!res.ok) throw new Error('Failed to delete artwork')
 
-      // Refresh artwork list
       fetchArtwork()
-      alert('Artwork deleted successfully')
+      setActionNotice({
+        type: 'success',
+        message: 'Artwork deleted successfully.',
+      })
     } catch (error) {
       console.error('Error deleting artwork:', error)
-      alert('Failed to delete artwork. Please try again.')
+      setActionNotice({
+        type: 'error',
+        message: 'Failed to delete artwork. Please try again.',
+      })
+    } finally {
+      setIsDeletingArtwork(false)
+      setPendingDeleteArtworkId(null)
     }
   }
 
@@ -765,12 +871,150 @@ export default function HomePage() {
       fetchArtwork()
     } catch (error) {
       console.error('Error toggling featured status:', error)
-      alert('Failed to update featured status. Please try again.')
+      setActionNotice({
+        type: 'error',
+        message: 'Failed to update featured status. Please try again.',
+      })
+    }
+  }
+
+  const confirmUnpublishArtwork = async () => {
+    if (!pendingUnpublishArtworkId) return
+
+    const targetArtwork = allArtwork.find((item) => item.id === pendingUnpublishArtworkId)
+    const isOwner = Boolean(targetArtwork && currentUserId && targetArtwork.ownerId === currentUserId)
+
+    if (!isAdmin && !isOwner) {
+      setActionNotice({
+        type: 'error',
+        message: 'You can only manage your own artwork.',
+      })
+      setPendingUnpublishArtworkId(null)
+      return
+    }
+
+    setIsUnpublishingArtwork(true)
+    try {
+      const endpoint = isAdmin
+        ? `/api/admin/artworks/${pendingUnpublishArtworkId}`
+        : `/api/artworks/${pendingUnpublishArtworkId}`
+      const payload = isAdmin ? { action: 'unpublish' } : { action: 'removeFromGallery' }
+
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error('Failed to move artwork to pending')
+
+      if (selectedArtwork?.id === pendingUnpublishArtworkId) {
+        setSelectedArtwork(null)
+      }
+
+      fetchArtwork()
+      setActionNotice({
+        type: 'success',
+        message: 'Artwork moved to pending.',
+      })
+    } catch (error) {
+      console.error('Error moving artwork to pending:', error)
+      setActionNotice({
+        type: 'error',
+        message: 'Failed to move artwork to pending. Please try again.',
+      })
+    } finally {
+      setIsUnpublishingArtwork(false)
+      setPendingUnpublishArtworkId(null)
     }
   }
 
   const closeArtworkModal = () => {
+    setIsOwnerEditConfirmOpen(false)
+    setIsEditArtworkModalOpen(false)
     setSelectedArtwork(null)
+  }
+
+  const requestSaveOwnerArtworkEdits = () => {
+    if (!selectedArtwork) return
+
+    const trimmedTitle = artworkEditForm.title.trim()
+    if (!trimmedTitle) {
+      setActionNotice({
+        type: 'error',
+        message: 'Title is required.',
+      })
+      return
+    }
+
+    setIsOwnerEditConfirmOpen(true)
+  }
+
+  const openOwnerEditModal = () => {
+    if (!selectedArtwork) return
+
+    setArtworkEditForm({
+      title: selectedArtwork.title || '',
+      description: selectedArtwork.description || '',
+      projectType: selectedArtwork.projectType || '',
+      toolsUsed: (selectedArtwork.toolsUsed || []).join(', '),
+    })
+    setIsEditArtworkModalOpen(true)
+  }
+
+  const saveOwnerArtworkEdits = async () => {
+    if (!selectedArtwork) return
+
+    setIsOwnerEditConfirmOpen(false)
+
+    const trimmedTitle = artworkEditForm.title.trim()
+    if (!trimmedTitle) {
+      setActionNotice({
+        type: 'error',
+        message: 'Title is required.',
+      })
+      return
+    }
+
+    setIsSavingArtworkEdit(true)
+    try {
+      const toolsUsed = artworkEditForm.toolsUsed
+        .split(',')
+        .map((tool) => tool.trim())
+        .filter(Boolean)
+
+      const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: trimmedTitle,
+          description: artworkEditForm.description.trim(),
+          project_type: artworkEditForm.projectType.trim(),
+          tools_used: toolsUsed,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update artwork')
+      }
+
+      setIsEditArtworkModalOpen(false)
+      setSelectedArtwork(null)
+      await fetchArtwork()
+      setActionNotice({
+        type: 'success',
+        message:
+          'Artwork updated and moved to pending for admin review. You can keep editing it while pending in your User Portal.',
+      })
+    } catch (error) {
+      console.error('Error updating artwork:', error)
+      setActionNotice({
+        type: 'error',
+        message: 'Failed to update artwork. Please try again.',
+      })
+    } finally {
+      setIsSavingArtworkEdit(false)
+    }
   }
 
   useEffect(() => {
@@ -912,11 +1156,68 @@ export default function HomePage() {
     emptyStateMessage = 'No artwork yet. Be the first to upload your work.'
   }
 
+  const isSelectedArtworkOwner = Boolean(
+    selectedArtwork && currentUserId && selectedArtwork.ownerId === currentUserId
+  )
+  const canManageSelectedArtwork = Boolean(isAdmin || isSelectedArtworkOwner)
+
   return (
     <div
       className="py-12 sm:py-16 lg:py-20"
       style={{ backgroundColor: '#ffffff' }}
     >
+      {actionNotice && (
+        <div className="fixed top-4 right-4 z-[80] w-full max-w-sm px-4 sm:px-0">
+          <div
+            className={`rounded-lg border px-4 py-3 shadow-lg ${
+              actionNotice.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <p className="text-sm font-medium">{actionNotice.message}</p>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={Boolean(pendingDeleteArtworkId)}
+        title="Delete Artwork?"
+        message="Are you sure you want to delete this artwork? This action cannot be undone."
+        confirmText="Delete"
+        loadingText="Deleting..."
+        variant="danger"
+        isLoading={isDeletingArtwork}
+        onCancel={() => setPendingDeleteArtworkId(null)}
+        onConfirm={confirmDeleteArtwork}
+      />
+
+      <ConfirmModal
+        open={Boolean(pendingUnpublishArtworkId)}
+        title="Move Artwork To Pending?"
+        message="This will remove the artwork from the public gallery and carousel until it is approved again."
+        confirmText="Move"
+        loadingText="Moving..."
+        variant="accent"
+        isLoading={isUnpublishingArtwork}
+        onCancel={() => setPendingUnpublishArtworkId(null)}
+        onConfirm={confirmUnpublishArtwork}
+      />
+
+      <ConfirmModal
+        open={isOwnerEditConfirmOpen}
+        title="Save Changes And Send For Review?"
+        message="Saving these edits will move this artwork to pending and require admin approval before it appears publicly again."
+        confirmText="Save And Move To Pending"
+        loadingText="Saving..."
+        variant="accent"
+        isLoading={isSavingArtworkEdit}
+        onCancel={() => setIsOwnerEditConfirmOpen(false)}
+        onConfirm={saveOwnerArtworkEdits}
+      />
+
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16">
         {/* Intro Section */}
         <section className="flex flex-col items-center text-center w-full max-w-4xl mx-auto h-auto gap-3 mb-8">
@@ -985,6 +1286,7 @@ export default function HomePage() {
                   onOpen={handleOpenArtwork}
                   onDelete={handleDelete}
                   onToggleFeatured={handleToggleFeatured}
+                  onUnpublish={handleUnpublish}
                 />
               ))
             ) : (
@@ -1153,6 +1455,7 @@ export default function HomePage() {
                   onOpen={handleOpenArtwork}
                   onDelete={handleDelete}
                   onToggleFeatured={handleToggleFeatured}
+                  onUnpublish={handleUnpublish}
                 />
               ))}
             </Masonry>
@@ -1223,14 +1526,52 @@ export default function HomePage() {
                     {selectedArtwork.title}
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeArtworkModal}
-                  className="rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                  aria-label="Close preview"
-                >
-                  <X size={22} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {canManageSelectedArtwork && (
+                    <div className="hidden sm:flex items-center gap-2">
+                      {isSelectedArtworkOwner && (
+                        <button
+                          type="button"
+                          onClick={openOwnerEditModal}
+                          className="rounded-full border border-afh-orange px-3 py-1.5 text-xs font-medium text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                        >
+                          Edit Artwork
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(selectedArtwork.id)}
+                          className="rounded-full border border-afh-orange px-3 py-1.5 text-xs font-medium text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                        >
+                          {selectedArtwork.featured ? 'Unfeature' : 'Feature'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleUnpublish(selectedArtwork.id)}
+                        className="rounded-full border border-gray-400 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                      >
+                        Move to Pending
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(selectedArtwork.id)}
+                        className="rounded-full bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeArtworkModal}
+                    className="rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                    aria-label="Close preview"
+                  >
+                    <X size={22} />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
@@ -1263,13 +1604,25 @@ export default function HomePage() {
                 <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-7 text-center sm:text-left">
                   <div className="space-y-1.5">
                     <p className="text-sm text-gray-500">Artist</p>
-                    <p className="mt-1 text-xl font-semibold text-gray-900">
-                      {selectedArtwork.name}
-                    </p>
-                    {selectedArtwork.artistUsername && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        @{selectedArtwork.artistUsername}
+                    {selectedArtwork.artistUsername ? (
+                      <Link
+                        href={`/profiles/${selectedArtwork.artistUsername}`}
+                        className="mt-1 block text-xl font-semibold text-gray-900 underline-offset-4 hover:underline"
+                      >
+                        {selectedArtwork.name}
+                      </Link>
+                    ) : (
+                      <p className="mt-1 text-xl font-semibold text-gray-900">
+                        {selectedArtwork.name}
                       </p>
+                    )}
+                    {selectedArtwork.artistUsername && (
+                      <Link
+                        href={`/profiles/${selectedArtwork.artistUsername}`}
+                        className="mt-1 block text-sm text-gray-500 underline-offset-4 hover:underline"
+                      >
+                        @{selectedArtwork.artistUsername}
+                      </Link>
                     )}
                     <p className="mt-1 text-sm text-gray-500">
                       {selectedArtwork.projectType || selectedArtwork.medium}
@@ -1320,7 +1673,135 @@ export default function HomePage() {
                     </div>
                   )}
 
+                  {canManageSelectedArtwork && (
+                    <div className="pt-2 border-t border-gray-200 sm:hidden">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Artwork Actions</h4>
+                      <div className={`grid grid-cols-1 gap-2 ${isAdmin ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                        {isSelectedArtworkOwner && (
+                          <button
+                            type="button"
+                            onClick={openOwnerEditModal}
+                            className="w-full rounded-lg border border-afh-orange px-3 py-2 text-sm font-medium text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                          >
+                            Edit Artwork
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeatured(selectedArtwork.id)}
+                            className="w-full rounded-lg border border-afh-orange px-3 py-2 text-sm font-medium text-afh-orange transition-colors hover:bg-afh-orange hover:text-white"
+                          >
+                            {selectedArtwork.featured ? 'Unfeature' : 'Feature'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleUnpublish(selectedArtwork.id)}
+                          className="w-full rounded-lg border border-gray-400 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                        >
+                          Move to Pending
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(selectedArtwork.id)}
+                          className="w-full rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isEditArtworkModalOpen && selectedArtwork && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+              aria-label="Close artwork edit"
+              onClick={() => setIsEditArtworkModalOpen(false)}
+            />
+            <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl sm:p-6">
+              <h3 className="text-xl font-heading text-gray-900">Edit Artwork</h3>
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Saving changes will move this artwork to pending for admin approval again. You can still continue editing while it is pending.
+              </div>
+
+              <div className="mt-4 space-y-4">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Title</span>
+                  <input
+                    type="text"
+                    value={artworkEditForm.title}
+                    onChange={(event) =>
+                      setArtworkEditForm((prev) => ({ ...prev, title: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-afh-orange"
+                    maxLength={500}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Description</span>
+                  <textarea
+                    value={artworkEditForm.description}
+                    onChange={(event) =>
+                      setArtworkEditForm((prev) => ({ ...prev, description: event.target.value }))
+                    }
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-afh-orange"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Project Type</span>
+                  <input
+                    type="text"
+                    value={artworkEditForm.projectType}
+                    onChange={(event) =>
+                      setArtworkEditForm((prev) => ({ ...prev, projectType: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-afh-orange"
+                    maxLength={100}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Tools Used (comma separated)</span>
+                  <input
+                    type="text"
+                    value={artworkEditForm.toolsUsed}
+                    onChange={(event) =>
+                      setArtworkEditForm((prev) => ({ ...prev, toolsUsed: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-afh-orange"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditArtworkModalOpen(false)}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                  disabled={isSavingArtworkEdit}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={requestSaveOwnerArtworkEdits}
+                  className="rounded-lg bg-afh-orange px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-afh-orange/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSavingArtworkEdit}
+                >
+                  {isSavingArtworkEdit ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </div>
           </div>

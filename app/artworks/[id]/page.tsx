@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Share2, Heart } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 type Artwork = {
   id: string
@@ -31,7 +31,6 @@ export default function ArtworkDetailPage({ params }: { params: { id: string } }
   const [artwork, setArtwork] = useState<Artwork | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [liked, setLiked] = useState(false)
 
   useEffect(() => {
     fetchArtwork()
@@ -89,19 +88,6 @@ export default function ArtworkDetailPage({ params }: { params: { id: string } }
             <span className="font-secondary">Back</span>
           </button>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setLiked(!liked)}
-              className={`p-2 rounded-full transition-colors ${
-                liked
-                  ? 'bg-red-100 text-red-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Heart size={24} fill={liked ? 'currentColor' : 'none'} />
-            </button>
-            <button className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
-              <Share2 size={24} />
-            </button>
           </div>
         </div>
       </header>
@@ -112,13 +98,25 @@ export default function ArtworkDetailPage({ params }: { params: { id: string } }
           {/* Image Section */}
           <div className="lg:col-span-2">
             <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden shadow-lg">
-              <Image
-                src={artwork.image_url}
-                alt={artwork.title}
-                fill
-                className="object-cover"
-                priority
-              />
+              {/\.(mp4|webm|mov|m4v)(\?|$)/i.test(artwork.image_url) || /\/video\/upload\//i.test(artwork.image_url) ? (
+                <video
+                  src={artwork.image_url}
+                  poster={artwork.thumbnail_url || undefined}
+                  controls
+                  className="h-full w-full object-contain"
+                  preload="metadata"
+                >
+                  <track kind="captions" label="English captions" />
+                </video>
+              ) : (
+                <Image
+                  src={artwork.image_url}
+                  alt={artwork.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              )}
             </div>
           </div>
 
@@ -194,7 +192,6 @@ export default function ArtworkDetailPage({ params }: { params: { id: string } }
                   day: 'numeric',
                 })}
               </p>
-              <p>Views: {artwork.view_count || 0}</p>
               {artwork.featured && (
                 <p className="text-afh-orange font-medium">Featured on homepage</p>
               )}

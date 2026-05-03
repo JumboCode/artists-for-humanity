@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Cropper, { Area } from 'react-easy-crop'
+import ConfirmModal from '@/components/common/ConfirmModal'
 
 type Profile = {
   display_name: string
@@ -25,6 +26,7 @@ type Artwork = {
   tools_used: string[]
   project_type: string | null
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejection_reason?: string | null
   created_at: string
 }
 
@@ -36,6 +38,22 @@ type ArtworkEditForm = {
 }
 
 type CropMode = 'profile' | 'banner'
+
+const LEGACY_BANNER_PLACEHOLDERS = ['/imgs/profile-banner-temp.png', 'profile-banner-temp.png']
+const LEGACY_PROFILE_PLACEHOLDERS = ['/imgs/user-stock.png', 'user-stock.png']
+
+function isLegacyPlaceholderImage(
+  url: string | null | undefined,
+  type: 'banner' | 'profile'
+) {
+  if (!url) return false
+
+  const normalized = url.toLowerCase().split('?')[0]
+  const placeholders =
+    type === 'banner' ? LEGACY_BANNER_PLACEHOLDERS : LEGACY_PROFILE_PLACEHOLDERS
+
+  return placeholders.some((placeholder) => normalized.endsWith(placeholder))
+}
 
 function isVideoAsset(url: string) {
   return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url) || /\/video\/upload\//i.test(url)
@@ -118,9 +136,10 @@ async function uploadCroppedImageToCloudinary(
 
 function renderArtworkStatusAction(
   status: Artwork['status'],
+  isAdmin: boolean,
   isUpdatingArtworkState: boolean,
   handleRemoveFromGallery: () => void,
-  handleSubmitDraft: () => void
+  handlePublishToGallery: () => void
 ) {
   if (status === 'APPROVED') {
     return (
@@ -130,31 +149,23 @@ function renderArtworkStatusAction(
         disabled={isUpdatingArtworkState}
         className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Remove From Gallery
+        Move to Pending
       </button>
     )
   }
 
-  if (status === 'REJECTED') {
-    return (
-      <button
-        type="button"
-        onClick={handleSubmitDraft}
-        disabled={isUpdatingArtworkState}
-        className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Upload Draft For Review
-      </button>
-    )
+  if (!isAdmin) {
+    return null
   }
 
   return (
     <button
       type="button"
-      disabled
-      className="rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-500"
+      onClick={handlePublishToGallery}
+      disabled={isUpdatingArtworkState}
+      className="rounded-full border border-afh-orange px-4 py-2 text-sm text-afh-orange transition-colors hover:bg-afh-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
     >
-      Awaiting Admin Review
+      Publish to Gallery
     </button>
   )
 }
@@ -217,8 +228,16 @@ function UserArtworkCard({ art, onOpen }: Readonly<UserArtworkCardProps>) {
 export default function UserPortal() {
   const { data: session, status, update } = useSession()
   const router = useRouter()
+  const isAdmin = session?.user?.role === 'ADMIN'
   
-  const [onPublished, setOnPublished] = useState(true)
+  const [activeTab, setActiveTab] = useState<'published' | 'pending' | 'drafts'>('published')
+  const [savedDraft, setSavedDraft] = useState<{
+    title?: string
+    project_type?: string
+    mediums?: string[]
+    description?: string
+    updatedAt?: string
+  } | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [published, setPublished] = useState<Artwork[]>([])
   const [pendingApproval, setPendingApproval] = useState<Artwork[]>([])
@@ -243,6 +262,9 @@ export default function UserPortal() {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSaveEditConfirm, setShowSaveEditConfirm] = useState(false)
   const [isApplyingCrop, setIsApplyingCrop] = useState(false)
   const [artworkEditForm, setArtworkEditForm] = useState<ArtworkEditForm>({
     title: '',
@@ -267,6 +289,29 @@ export default function UserPortal() {
       router.push('/login')
     }
   }, [status, router])
+
+  // Load saved draft from localStorage
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
+      const key = `upload-draft:${session.user.id}`
+      const raw = window.localStorage.getItem(key)
+      if (raw) {
+        try {
+          setSavedDraft(JSON.parse(raw))
+        } catch {
+          setSavedDraft(null)
+        }
+      } else {
+        setSavedDraft(null)
+      }
+    }
+  }, [status, session?.user?.id])
+
+  const deleteSavedDraft = () => {
+    if (!session?.user?.id) return
+    window.localStorage.removeItem(`upload-draft:${session.user.id}`)
+    setSavedDraft(null)
+  }
 
   // Fetch user profile and artwork
   useEffect(() => {
@@ -304,7 +349,7 @@ export default function UserPortal() {
       if (!res.ok) throw new Error('Failed to fetch artwork')
       const data = await res.json()
       setPublished(data.published || [])
-      setPendingApproval(data.pending_approval || [])
+      setPendingApproval(data.pendingApproval || [])
     } catch (error) {
       console.error('Error fetching artwork:', error)
     }
@@ -377,7 +422,10 @@ export default function UserPortal() {
       closeCropper()
     } catch (error) {
       console.error('Error applying crop:', error)
-      alert('Failed to process image. Please try again.')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Failed to process image. Please try again.',
+      })
     } finally {
       setIsApplyingCrop(false)
       setUploadingImage(false)
@@ -391,13 +439,19 @@ export default function UserPortal() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Please upload an image file.',
+      })
       return
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size must be less than 10MB')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Image size must be less than 10MB.',
+      })
       return
     }
 
@@ -411,13 +465,19 @@ export default function UserPortal() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Please upload an image file.',
+      })
       return
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size must be less than 10MB')
+      setProfileFeedback({
+        type: 'error',
+        message: 'Image size must be less than 10MB.',
+      })
       return
     }
 
@@ -438,8 +498,8 @@ export default function UserPortal() {
       return
     }
 
-    const normalizedInstagram = form.instagram?.trim() || ''
-    if (/\s/.test(normalizedInstagram) || !/^[a-zA-Z0-9._]*$/.test(normalizedInstagram)) {
+    // Check Instagram
+    if (form.instagram && !/^[a-zA-Z0-9._]+$/.test(form.instagram)) {
       setProfileFeedback({
         type: 'error',
         message: 'Invalid Instagram handle',
@@ -447,28 +507,12 @@ export default function UserPortal() {
       return
     }
 
-    const normalizedSchool = form.school?.trim() || ''
-    const normalizedGraduationYear = form.graduation_year?.trim() || ''
-    if (normalizedGraduationYear && !/^\d{4}$/.test(normalizedGraduationYear)) {
-      setProfileFeedback({
-        type: 'error',
-        message: 'Graduation year must be a 4-digit year.',
-      })
-      return
-    }
-
-    const payload: Profile = {
-      ...form,
-      school: normalizedSchool || null,
-      graduation_year: normalizedGraduationYear || null,
-      instagram: normalizedInstagram || null,
-    }
     setIsSaving(true)
     try {
       const res = await fetch('/api/users/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       })
 
       if (!res.ok) throw new Error('Failed to update profile')
@@ -531,10 +575,11 @@ export default function UserPortal() {
 
   function closeArtworkEdit() {
     setEditingArtwork(null)
+    setShowSaveEditConfirm(false)
     setArtworkEditError(null)
   }
 
-  async function saveArtworkEdit(e: React.FormEvent<HTMLFormElement>) {
+  function saveArtworkEdit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!editingArtwork) return
 
@@ -542,6 +587,15 @@ export default function UserPortal() {
       setArtworkEditError('Title is required.')
       return
     }
+
+    setArtworkEditError(null)
+    setShowSaveEditConfirm(true)
+  }
+
+  async function confirmSaveArtworkEdit() {
+    if (!editingArtwork) return
+
+    setShowSaveEditConfirm(false)
 
     setIsSavingArtwork(true)
     setArtworkEditError(null)
@@ -577,13 +631,24 @@ export default function UserPortal() {
         description: payload.description || null,
         tools_used: toolsArray,
         project_type: payload.project_type || null,
+        status: data?.status || editingArtwork.status,
       }
 
       setSelectedArtwork(updatedArtwork)
       setEditingArtwork(null)
+
+      const movedToPendingForReview =
+        data?.moved_to_pending === true || data?.status === 'PENDING'
+
+      if (movedToPendingForReview) {
+        setActiveTab('pending')
+      }
+
       setProfileFeedback({
         type: 'success',
-        message: 'Artwork updated successfully!',
+        message: movedToPendingForReview
+          ? 'Artwork updated and moved to pending for admin review. You can continue editing while it is pending.'
+          : 'Artwork updated successfully!',
       })
     } catch (error) {
       console.error('Error updating artwork:', error)
@@ -598,10 +663,13 @@ export default function UserPortal() {
   async function handleDeleteArtwork() {
     if (!selectedArtwork) return
 
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete this artwork? This action cannot be undone.'
-    )
-    if (!confirmed) return
+    setShowDeleteConfirm(true)
+  }
+
+  async function confirmDeleteArtwork() {
+    if (!selectedArtwork) return
+
+    setShowDeleteConfirm(false)
 
     setIsUpdatingArtworkState(true)
     try {
@@ -634,12 +702,7 @@ export default function UserPortal() {
 
   async function handleRemoveFromGallery() {
     if (!selectedArtwork) return
-
-    const confirmed = window.confirm(
-      'Remove this artwork from the gallery and move it to drafts? It will require admin approval again before being published.'
-    )
-    if (!confirmed) return
-
+    setShowRemoveConfirm(false)
     setIsUpdatingArtworkState(true)
     try {
       const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
@@ -655,11 +718,12 @@ export default function UserPortal() {
 
       await fetchArtwork()
       closeArtworkPreview()
-      setOnPublished(false)
+      setActiveTab('pending')
       setProfileFeedback({
         type: 'success',
         message:
-          'Artwork moved to drafts. Submit it again whenever you are ready for admin review.',
+          'Artwork moved to pending. An admin will review it before it can be published again.',
+
       })
     } catch (error) {
       console.error('Error removing artwork from gallery:', error)
@@ -668,14 +732,14 @@ export default function UserPortal() {
         message:
           error instanceof Error
             ? error.message
-            : 'Failed to move artwork to drafts.',
+            : 'Failed to move artwork to \'Pending\'.',
       })
     } finally {
       setIsUpdatingArtworkState(false)
     }
   }
 
-  async function handleSubmitDraft() {
+  async function handlePublishToGallery() {
     if (!selectedArtwork) return
 
     setIsUpdatingArtworkState(true)
@@ -683,29 +747,31 @@ export default function UserPortal() {
       const res = await fetch(`/api/artworks/${selectedArtwork.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'submitDraft' }),
+        body: JSON.stringify({ action: 'publishToGallery' }),
       })
 
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(data?.error || 'Failed to submit draft')
+        throw new Error(data?.error || 'Failed to publish artwork')
       }
 
       await fetchArtwork()
       setSelectedArtwork({
         ...selectedArtwork,
-        status: 'PENDING',
+        status: 'APPROVED',
       })
+      setActiveTab('published')
       setProfileFeedback({
         type: 'success',
-        message: 'Draft submitted for admin approval.',
+        message: 'Artwork published to gallery.',
+
       })
     } catch (error) {
-      console.error('Error submitting draft:', error)
+      console.error('Error publishing artwork:', error)
       setProfileFeedback({
         type: 'error',
         message:
-          error instanceof Error ? error.message : 'Failed to submit draft.',
+          error instanceof Error ? error.message : 'Failed to publish artwork.',
       })
     } finally {
       setIsUpdatingArtworkState(false)
@@ -713,6 +779,15 @@ export default function UserPortal() {
   }
 
   const displayName = profile?.display_name || session?.user?.name || 'User'
+  const resolvedBannerImage =
+    profile?.banner_image_url && !isLegacyPlaceholderImage(profile.banner_image_url, 'banner')
+      ? profile.banner_image_url
+      : null
+  const resolvedProfileImage =
+    profile?.profile_image_url &&
+    !isLegacyPlaceholderImage(profile.profile_image_url, 'profile')
+      ? profile.profile_image_url
+      : null
 
   if (loading || status === 'loading') {
     return (
@@ -750,31 +825,62 @@ export default function UserPortal() {
           </div>
         )}
 
-        <Image
-          src={profile.banner_image_url || '/imgs/profile-banner-temp.png'}
-          alt="Banner Image"
-          className="w-full h-[30vh] object-cover"
-          width={1200}
-          height={300}
-          priority
-        />
+        {resolvedBannerImage ? (
+          <Image
+            src={resolvedBannerImage}
+            alt="Banner Image"
+            className="w-full h-[30vh] object-cover"
+            width={1200}
+            height={300}
+            priority
+          />
+        ) : (
+          <div
+            className="w-full h-[30vh] bg-afh-orange"
+            role="img"
+            aria-label="Default profile banner"
+          />
+        )}
       </div>
 
       <div className="h-full w-full flex max-md:flex-col gap-[50px]">
         <div className="afh-section user-info -translate-y-[30px] w-[30%] md:w-[45%] max-md:w-full max-md:items-center xs: items-center flex flex-col gap-[40px]">
           {/* Profile image and name */}
-          <div className="flex flex-col">
+          <div className="mx-auto flex w-fit flex-col items-center gap-3 text-center">
             <div className="w-[100px] h-[100px] rounded-full overflow-hidden border-4 border-white bg-white">
-              <Image
-                src={profile.profile_image_url || '/imgs/user-stock.png'}
-                alt="user profile picture"
-                width={100}
-                height={100}
-                className="object-cover w-full h-full"
-              />
+              {resolvedProfileImage ? (
+                <Image
+                  src={resolvedProfileImage}
+                  alt="user profile picture"
+                  width={100}
+                  height={100}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div
+                  className="w-full h-full bg-[#F4F4F4] flex items-center justify-center text-[#8A8A8A]"
+                  role="img"
+                  aria-label="Default profile picture"
+                >
+                  <svg
+                    width="56"
+                    height="56"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden
+                  >
+                    <circle cx="12" cy="8" r="4" fill="currentColor" />
+                    <path
+                      d="M5 20C5 16.6863 8.13401 14 12 14C15.866 14 19 16.6863 19 20V21H5V20Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
 
-            <p className="font-primary text-[40px] font-light">
+            <p className="font-primary text-[40px] font-light text-center leading-none">
               {displayName}
             </p>
           </div>
@@ -895,19 +1001,25 @@ export default function UserPortal() {
         <div className="afh-section galery-section w-[70%] md:w-[55%] max-md:w-full max-md:items-center -translate-y-[30px] section-padding flex flex-col gap-[40px]">
           <div className="flex w-full gap-[25px] border-b-2 h-auto justify-center md:justify-start">
             <button
-              className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-black' : 'border-transparent'}`}
-              onClick={() => setOnPublished(true)}
+              className={`relative h-full border-b-2 bottom-[-2px] ${activeTab === 'published' ? 'border-black' : 'border-transparent'}`}
+              onClick={() => setActiveTab('published')}
             >
               Published
             </button>
             <button
-              className={`relative h-full border-b-2 bottom-[-2px] ${onPublished ? 'border-transparent' : 'border-black'}`}
-              onClick={() => setOnPublished(false)}
+              className={`relative h-full border-b-2 bottom-[-2px] ${activeTab === 'pending' ? 'border-black' : 'border-transparent'}`}
+              onClick={() => setActiveTab('pending')}
             >
-              Pending Approval
+              Pending
+            </button>
+            <button
+              className={`relative h-full border-b-2 bottom-[-2px] ${activeTab === 'drafts' ? 'border-black' : 'border-transparent'}`}
+              onClick={() => setActiveTab('drafts')}
+            >
+              Drafts
             </button>
           </div>
-          {onPublished && (
+          {activeTab === 'published' && (
             <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary">
               {published.length > 0 ? (
                 published.map(art => (
@@ -924,7 +1036,7 @@ export default function UserPortal() {
               )}
             </div>
           )}
-          {!onPublished && (
+          {activeTab === 'pending' && (
             <div className="gallery-grid gap-[60px] grid-cols-2 max-lg:grid-cols-1 max-md:items-center font-primary text-[10px]">
               <button
                 key="addNew"
@@ -959,6 +1071,65 @@ export default function UserPortal() {
               ))}
             </div>
           )}
+          {activeTab === 'drafts' && (
+            <div className="flex flex-col gap-6 w-full">
+              {savedDraft ? (
+                <div className="card bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs uppercase tracking-widest text-gray-400 font-secondary">Saved Draft</p>
+                      <h3 className="text-lg font-medium text-gray-900">{savedDraft.title || 'Untitled'}</h3>
+                      {savedDraft.project_type && (
+                        <p className="text-sm text-gray-500">{savedDraft.project_type}</p>
+                      )}
+                      {savedDraft.mediums && savedDraft.mediums.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {savedDraft.mediums.map(m => (
+                            <span key={m} className="px-2 py-0.5 bg-afh-orange/10 text-afh-orange rounded-full text-xs font-secondary">{m}</span>
+                          ))}
+                        </div>
+                      )}
+                      {savedDraft.description && (
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-3">{savedDraft.description}</p>
+                      )}
+                      {savedDraft.updatedAt && (
+                        <p className="mt-2 text-xs text-gray-400">
+                          Last saved {new Date(savedDraft.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={navigateToUpload}
+                      className="rounded-full border-2 border-afh-orange text-afh-orange bg-white hover:bg-afh-orange hover:text-white px-5 py-2 text-sm font-light transition-all"
+                    >
+                      Continue Editing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={deleteSavedDraft}
+                      className="rounded-full border border-gray-300 text-gray-500 bg-white hover:bg-gray-100 px-5 py-2 text-sm font-light transition-all"
+                    >
+                      Delete Draft
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 font-secondary">No saved drafts</p>
+                  <button
+                    type="button"
+                    onClick={navigateToUpload}
+                    className="mt-4 rounded-full border-2 border-afh-orange text-afh-orange bg-white hover:bg-afh-orange hover:text-white px-6 py-2 text-sm font-light transition-all"
+                  >
+                    Start a New Upload
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -976,10 +1147,13 @@ export default function UserPortal() {
               <button
                 type="button"
                 onClick={closeArtworkPreview}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-colors duration-150 focus:outline-none"
                 aria-label="Close preview"
               >
-                ×
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M10.5 1.5L1.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1.5 1.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
@@ -1006,22 +1180,35 @@ export default function UserPortal() {
                 )}
               </div>
 
-              <div className="mt-4 text-sm text-gray-600 font-secondary text-center md:text-left">
-                <p>
-                  Status: <span className="font-medium">{selectedArtwork.status}</span>
-                </p>
-                <p>
-                  {selectedArtwork.tools_used.join(', ') || selectedArtwork.project_type || 'Artwork'}
-                </p>
+              <div className="mt-4 space-y-1 text-sm font-secondary text-center md:text-left">
+                {(() => {
+                  const statusColors: Record<string, string> = { REJECTED: 'font-medium text-red-600', APPROVED: 'font-medium text-green-600', PENDING: 'font-medium text-yellow-600' }
+                  return (
+                    <p className="text-gray-600">
+                      <span className="font-medium text-gray-800">Status:</span>{' '}
+                      <span className={statusColors[selectedArtwork.status] ?? 'font-medium text-gray-600'}>{selectedArtwork.status}</span>
+                    </p>
+                  )
+                })()}
+                {selectedArtwork.status === 'REJECTED' && selectedArtwork.rejection_reason && (
+                  <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <span className="font-medium text-red-800">Rejection Reason:</span>{' '}{selectedArtwork.rejection_reason}
+                  </p>
+                )}
+                {selectedArtwork.tools_used.length > 0 && (
+                  <p className="text-gray-600">
+                    <span className="font-medium text-gray-800">Medium:</span>{' '}{selectedArtwork.tools_used.join(', ')}
+                  </p>
+                )}
                 {selectedArtwork.project_type && (
-                  <p className="text-xs">
-                    <span className="font-medium">Project Type:</span> {selectedArtwork.project_type}
+                  <p className="text-gray-600">
+                    <span className="font-medium text-gray-800">Project Type:</span>{' '}{selectedArtwork.project_type}
                   </p>
                 )}
                 {selectedArtwork.description && (
-                  <p className="mt-2 whitespace-pre-wrap">{selectedArtwork.description}</p>
+                  <p className="text-gray-600 whitespace-pre-wrap"><span className="font-medium text-gray-800">Description:</span>{' '}{selectedArtwork.description}</p>
                 )}
-                <p className="mt-1">Created: {new Date(selectedArtwork.created_at).toLocaleDateString()}</p>
+                <p className="text-gray-600"><span className="font-medium text-gray-800">Created:</span>{' '}{new Date(selectedArtwork.created_at).toLocaleDateString()}</p>
               </div>
 
               <div className="mt-5 flex flex-col md:flex-row gap-2 justify-center md:justify-between items-center md:items-start">
@@ -1045,9 +1232,10 @@ export default function UserPortal() {
 
                   {renderArtworkStatusAction(
                     selectedArtwork.status,
+                    isAdmin,
                     isUpdatingArtworkState,
-                    handleRemoveFromGallery,
-                    handleSubmitDraft
+                    () => setShowRemoveConfirm(true),
+                    handlePublishToGallery
                   )}
                 </div>
               </div>
@@ -1055,6 +1243,42 @@ export default function UserPortal() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete Artwork?"
+        message="Are you sure you want to permanently delete this artwork? This action cannot be undone."
+        confirmText="Delete"
+        loadingText="Deleting..."
+        variant="danger"
+        isLoading={isUpdatingArtworkState}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeleteArtwork}
+      />
+
+      <ConfirmModal
+        open={showRemoveConfirm}
+        title="Move Artwork To Pending?"
+        message="This artwork will be removed from your public gallery and sent for admin review before it can be published again."
+        confirmText="Move"
+        loadingText="Removing..."
+        variant="accent"
+        isLoading={isUpdatingArtworkState}
+        onCancel={() => setShowRemoveConfirm(false)}
+        onConfirm={handleRemoveFromGallery}
+      />
+
+      <ConfirmModal
+        open={showSaveEditConfirm}
+        title="Save Changes And Send For Review?"
+        message="Saving these edits will move this artwork to pending and require admin approval before it appears publicly again."
+        confirmText="Save And Move To Pending"
+        loadingText="Saving..."
+        variant="accent"
+        isLoading={isSavingArtwork}
+        onCancel={() => setShowSaveEditConfirm(false)}
+        onConfirm={confirmSaveArtworkEdit}
+      />
 
       {cropImageSrc && cropMode && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6">
@@ -1072,10 +1296,13 @@ export default function UserPortal() {
               <button
                 type="button"
                 onClick={closeCropper}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-colors duration-150 focus:outline-none"
                 aria-label="Close crop modal"
               >
-                ×
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M10.5 1.5L1.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1.5 1.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
@@ -1151,10 +1378,13 @@ export default function UserPortal() {
               <button
                 type="button"
                 onClick={closeArtworkEdit}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-colors duration-150 focus:outline-none"
                 aria-label="Close artwork edit"
               >
-                ×
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M10.5 1.5L1.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1.5 1.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
@@ -1163,6 +1393,10 @@ export default function UserPortal() {
                 {artworkEditError}
               </div>
             )}
+
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Saving changes will move this artwork to pending for admin approval again. You can still continue editing while it is pending.
+            </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4">
               <label className="flex flex-col gap-1 text-sm">
@@ -1258,30 +1492,11 @@ export default function UserPortal() {
               type="button"
               onClick={cancelEdit}
               aria-label="Close edit modal"
-              className="absolute top-7 right-6 w-9 h-9 rounded-full bg-white text-afh-orange border-2 border-afh-orange flex items-center justify-center hover:bg-afh-orange hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-afh-orange"
+              className="absolute top-7 right-6 w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-colors duration-150 focus:outline-none"
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden
-              >
-                <path
-                  d="M10.5 1.5L1.5 10.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M1.5 1.5L10.5 10.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M10.5 1.5L1.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M1.5 1.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
@@ -1296,12 +1511,22 @@ export default function UserPortal() {
               {/* Banner Image Upload */}
               <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/30">
                 <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100">
-                  <Image
-                    src={bannerPreview || form.banner_image_url || '/imgs/profile-banner-temp.png'}
-                    alt="Banner preview"
-                    fill
-                    className="object-cover"
-                  />
+                  {((bannerPreview && !isLegacyPlaceholderImage(bannerPreview, 'banner')) ||
+                    (form.banner_image_url &&
+                      !isLegacyPlaceholderImage(form.banner_image_url, 'banner'))) ? (
+                    <Image
+                      src={bannerPreview || form.banner_image_url || ''}
+                      alt="Banner preview"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full bg-afh-orange"
+                      role="img"
+                      aria-label="Default profile banner preview"
+                    />
+                  )}
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   <label className="cursor-pointer px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm font-secondary">
@@ -1321,12 +1546,37 @@ export default function UserPortal() {
               {/* Profile Picture Upload */}
               <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg">
                 <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100">
-                  <Image
-                    src={imagePreview || form.profile_image_url || '/imgs/user-stock.png'}
-                    alt="Profile preview"
-                    fill
-                    className="object-cover"
-                  />
+                  {((imagePreview && !isLegacyPlaceholderImage(imagePreview, 'profile')) ||
+                    (form.profile_image_url &&
+                      !isLegacyPlaceholderImage(form.profile_image_url, 'profile'))) ? (
+                    <Image
+                      src={imagePreview || form.profile_image_url || ''}
+                      alt="Profile preview"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full bg-[#F4F4F4] flex items-center justify-center text-[#8A8A8A]"
+                      role="img"
+                      aria-label="Default profile picture preview"
+                    >
+                      <svg
+                        width="52"
+                        height="52"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden
+                      >
+                        <circle cx="12" cy="8" r="4" fill="currentColor" />
+                        <path
+                          d="M5 20C5 16.6863 8.13401 14 12 14C15.866 14 19 16.6863 19 20V21H5V20Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   <label className="cursor-pointer px-4 py-2 bg-afh-orange text-white rounded-full hover:bg-afh-orange/90 transition-colors text-sm font-secondary">
@@ -1428,7 +1678,7 @@ export default function UserPortal() {
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex justify-center sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={cancelEdit}

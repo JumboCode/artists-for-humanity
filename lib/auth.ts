@@ -1,8 +1,10 @@
 import { AuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
-import { Role } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { normalizeUsername } from '@/lib/security'
+
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('not-the-user-password', 10)
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -14,16 +16,22 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          throw new Error('Invalid credentials')
+          return null
+        }
+
+        const username = normalizeUsername(credentials.username)
+        if (!username || credentials.password.length > 128) {
+          return null
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
+          where: { username },
           include: { profile: true },
         })
 
         if (!user?.password_hash) {
-          throw new Error('Invalid credentials')
+          await bcrypt.compare(credentials.password, DUMMY_PASSWORD_HASH)
+          return null
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -32,7 +40,7 @@ export const authOptions: AuthOptions = {
         )
 
         if (!isPasswordValid) {
-          throw new Error('Invalid credentials')
+          return null
         }
 
         return {
@@ -46,7 +54,13 @@ export const authOptions: AuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
+  jwt: {
+    maxAge: 60 * 60 * 24 * 7,
+  },
+  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',
     error: '/login',
@@ -63,14 +77,14 @@ export const authOptions: AuthOptions = {
 
     async session({ session, token }) {
       if (session.user && token.id) {
-        session.user.id = token.id as string
-        session.user.role = token.role as Role
-        session.user.username = token.username as string
+        session.user.id = token.id
+        session.user.role = token.role
+        session.user.username = token.username
         
         // Fetch fresh profile data
         try {
           const userWithProfile = await prisma.user.findUnique({
-            where: { id: token.id as string },
+            where: { id: token.id },
             include: { profile: true },
           })
           

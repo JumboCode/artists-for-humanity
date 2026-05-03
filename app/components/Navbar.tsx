@@ -6,12 +6,25 @@ import { usePathname } from 'next/navigation'
 import { Menu, X, ChevronDown } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 
+const LEGACY_PROFILE_PLACEHOLDERS = ['/imgs/user-stock.png', 'user-stock.png']
+
+function isLegacyProfilePlaceholder(url: string | null | undefined) {
+  if (!url) return false
+  const normalized = url.toLowerCase().split('?')[0]
+  return LEGACY_PROFILE_PLACEHOLDERS.some((placeholder) => normalized.endsWith(placeholder))
+}
+
 const Navbar = () => {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const { data: session } = useSession()
   const profileRef = useRef<HTMLDivElement>(null)
+  const resolvedProfileImage =
+    session?.user?.profile?.profile_image_url &&
+    !isLegacyProfilePlaceholder(session.user.profile.profile_image_url)
+      ? session.user.profile.profile_image_url
+      : null
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -72,13 +85,32 @@ const Navbar = () => {
                   aria-label="Profile menu"
                   aria-expanded={isProfileOpen}
                 >
-                  <Image
-                    src={session?.user?.profile?.profile_image_url || "/imgs/user-stock.png"}
-                    alt="Profile Picture"
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
+                  {resolvedProfileImage ? (
+                    <Image
+                      src={resolvedProfileImage}
+                      alt="Profile Picture"
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F4F4F4] text-[#8A8A8A]">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden
+                      >
+                        <circle cx="12" cy="8" r="4" fill="currentColor" />
+                        <path
+                          d="M5 20C5 16.6863 8.13401 14 12 14C15.866 14 19 16.6863 19 20V21H5V20Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </div>
+                  )}
                   <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : 'rotate-0'}`}

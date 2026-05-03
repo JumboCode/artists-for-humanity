@@ -1,4 +1,5 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import ArtworkCard from './ArtworkCard'
 
@@ -27,7 +28,9 @@ type Artwork = {
   submitted_by_name: string | null
   submitted_by_email: string | null
   created_at: string
+  featured?: boolean
   author: {
+    email: string
     username: string
     profile: {
       display_name: string | null
@@ -50,8 +53,10 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null)
+  const [activeTab, setActiveTab] = useState<'pending' | 'published'>('pending')
+  const [approvedArtworks, setApprovedArtworks] = useState<Artwork[]>([])
+  const [approvedLoading, setApprovedLoading] = useState(false)
 
-  // Modal states
   const [rejectingArtwork, setRejectingArtwork] = useState<Artwork | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [featuringArtwork, setFeaturingArtwork] = useState<Artwork | null>(null)
@@ -67,6 +72,7 @@ export function AdminDashboard() {
     submitted_by_email: '',
   })
   const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false)
+  const [previewBgColor, setPreviewBgColor] = useState('#f3f4f6')
 
   useEffect(() => {
     fetchQueue()
@@ -88,6 +94,52 @@ export function AdminDashboard() {
     }
   }
 
+  async function fetchApproved() {
+    setApprovedLoading(true)
+    try {
+      const res = await fetch('/api/admin/artworks')
+      if (!res.ok) throw new Error('Failed to fetch approved artworks')
+      const data = await res.json()
+      setApprovedArtworks(data.artworks || [])
+    } catch (err) {
+      console.error('Failed to fetch approved artworks:', err)
+      setActionError('Failed to load published artworks. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
+    } finally {
+      setApprovedLoading(false)
+    }
+  }
+
+  function extractDominantColor(image: HTMLImageElement) {
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      canvas.width = 50
+      canvas.height = 50
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      let r = 0
+      let g = 0
+      let b = 0
+
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]
+        g += data[i + 1]
+        b += data[i + 2]
+      }
+
+      const pixelCount = data.length / 4
+      setPreviewBgColor(
+        `rgb(${Math.round(r / pixelCount)}, ${Math.round(g / pixelCount)}, ${Math.round(b / pixelCount)})`
+      )
+    } catch {
+      setPreviewBgColor('#f3f4f6')
+    }
+  }
+
   async function handleApprove(artwork: Artwork) {
     try {
       const res = await fetch(`/api/admin/artworks/${artwork.id}`, {
@@ -95,12 +147,14 @@ export function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'approve' }),
       })
-
       if (!res.ok) throw new Error('Failed to approve')
+
       if (selectedArtwork?.id === artwork.id) {
         setSelectedArtwork(null)
       }
+
       fetchQueue()
+      if (activeTab === 'published') fetchApproved()
     } catch (err) {
       console.error('Failed to approve artwork:', err)
       setActionError('Failed to approve artwork. Please try again.')
@@ -128,12 +182,12 @@ export function AdminDashboard() {
           rejection_reason: rejectReason,
         }),
       })
-
       if (!res.ok) throw new Error('Failed to reject')
 
       setRejectingArtwork(null)
       setRejectReason('')
       fetchQueue()
+      if (activeTab === 'published') fetchApproved()
     } catch (err) {
       console.error('Failed to reject artwork:', err)
       setActionError('Failed to reject artwork. Please try again.')
@@ -143,6 +197,47 @@ export function AdminDashboard() {
 
   function openFeatureModal(artwork: Artwork) {
     setFeaturingArtwork(artwork)
+  }
+
+  async function handleFeature() {
+    if (!featuringArtwork) return
+
+    try {
+      const res = await fetch(`/api/admin/artworks/${featuringArtwork.id}/feature`, {
+        method: 'PATCH',
+      })
+      if (!res.ok) throw new Error('Failed to feature')
+
+      setFeaturingArtwork(null)
+      fetchQueue()
+      if (activeTab === 'published') fetchApproved()
+    } catch (err) {
+      console.error('Failed to feature artwork:', err)
+      setActionError('Failed to feature artwork. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
+    }
+  }
+
+  async function handleUnpublish(artwork: Artwork) {
+    try {
+      const res = await fetch(`/api/admin/artworks/${artwork.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unpublish' }),
+      })
+      if (!res.ok) throw new Error('Failed to move artwork to pending')
+
+      if (selectedArtwork?.id === artwork.id) {
+        setSelectedArtwork(null)
+      }
+
+      fetchApproved()
+      fetchQueue()
+    } catch (err) {
+      console.error('Failed to unpublish artwork:', err)
+      setActionError('Failed to move artwork to pending. Please try again.')
+      setTimeout(() => setActionError(null), 5000)
+    }
   }
 
   function openEditModal(artwork: Artwork) {
@@ -166,12 +261,12 @@ export function AdminDashboard() {
   }
 
   function toggleToolSelection(tool: string) {
-    setEditForm((prev) => {
+    setEditForm(prev => {
       const isSelected = prev.tools_used.includes(tool)
       if (isSelected) {
         return {
           ...prev,
-          tools_used: prev.tools_used.filter((item) => item !== tool),
+          tools_used: prev.tools_used.filter(item => item !== tool),
         }
       }
 
@@ -220,27 +315,45 @@ export function AdminDashboard() {
         throw new Error(data?.message || 'Failed to update artwork')
       }
 
-      setSelectedArtwork((prev) =>
+      setSelectedArtwork(prev =>
         prev?.id === editingArtwork.id
           ? {
               ...prev,
               title: edits.title,
               description: edits.description,
               tools_used: edits.tools_used,
+              project_type: edits.project_type,
               submitted_by_name: edits.submitted_by_name,
               submitted_by_email: edits.submitted_by_email,
             }
           : prev
       )
 
-      setArtworks((prev) =>
-        prev.map((item) =>
+      setArtworks(prev =>
+        prev.map(item =>
           item.id === editingArtwork.id
             ? {
                 ...item,
                 title: edits.title,
                 description: edits.description,
                 tools_used: edits.tools_used,
+                project_type: edits.project_type,
+                submitted_by_name: edits.submitted_by_name,
+                submitted_by_email: edits.submitted_by_email,
+              }
+            : item
+        )
+      )
+
+      setApprovedArtworks(prev =>
+        prev.map(item =>
+          item.id === editingArtwork.id
+            ? {
+                ...item,
+                title: edits.title,
+                description: edits.description,
+                tools_used: edits.tools_used,
+                project_type: edits.project_type,
                 submitted_by_name: edits.submitted_by_name,
                 submitted_by_email: edits.submitted_by_email,
               }
@@ -251,33 +364,9 @@ export function AdminDashboard() {
       setEditingArtwork(null)
     } catch (err) {
       console.error('Failed to edit artwork:', err)
-      setEditFormError(
-        err instanceof Error ? err.message : 'Failed to update artwork.'
-      )
+      setEditFormError(err instanceof Error ? err.message : 'Failed to update artwork.')
     } finally {
       setIsSavingEdit(false)
-    }
-  }
-
-  async function handleFeature() {
-    if (!featuringArtwork) return
-
-    try {
-      const res = await fetch(
-        `/api/admin/artworks/${featuringArtwork.id}/feature`,
-        {
-          method: 'PATCH',
-        }
-      )
-
-      if (!res.ok) throw new Error('Failed to feature')
-
-      setFeaturingArtwork(null)
-      fetchQueue()
-    } catch (err) {
-      console.error('Failed to feature artwork:', err)
-      setActionError('Failed to feature artwork. Please try again.')
-      setTimeout(() => setActionError(null), 5000)
     }
   }
 
@@ -290,7 +379,7 @@ export function AdminDashboard() {
         <video
           src={artwork.image_url}
           poster={previewUrl || undefined}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           controls
           playsInline
           preload="metadata"
@@ -304,7 +393,8 @@ export function AdminDashboard() {
       <img
         src={previewUrl}
         alt={artwork.title}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
+        onLoad={event => extractDominantColor(event.currentTarget)}
       />
     )
   }
@@ -312,9 +402,7 @@ export function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-600 font-secondary">
-          Loading artwork...
-        </p>
+        <p className="text-gray-600 font-secondary">Loading artwork...</p>
       </div>
     )
   }
@@ -333,82 +421,139 @@ export function AdminDashboard() {
     )
   }
 
-  if (artworks.length === 0) {
-    return (
+  const pendingContent = artworks.length === 0 ? (
+    <div className="flex items-center justify-center py-10">
+      <p className="text-gray-600 font-secondary">No pending artwork. All clear!</p>
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {artworks.map(artwork => (
+        <ArtworkCard
+          key={artwork.id}
+          artwork={artwork}
+          onOpen={() => {
+            setPreviewBgColor('#f3f4f6')
+            setSelectedArtwork(artwork)
+          }}
+          onEdit={() => openEditModal(artwork)}
+          onApprove={() => handleApprove(artwork)}
+          onReject={() => openRejectModal(artwork)}
+          onFeature={() => openFeatureModal(artwork)}
+          showFeatureButton={false}
+          showEditButton
+        />
+      ))}
+    </div>
+  )
+
+  let publishedContent: React.ReactNode
+  if (approvedLoading) {
+    publishedContent = (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-600 font-secondary">
-          No artwork available
-        </p>
+        <p className="text-gray-600 font-secondary">Loading published artworks...</p>
+      </div>
+    )
+  } else if (approvedArtworks.length === 0) {
+    publishedContent = (
+      <div className="flex items-center justify-center py-10">
+        <p className="text-gray-600 font-secondary">No published artworks yet.</p>
+      </div>
+    )
+  } else {
+    publishedContent = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {approvedArtworks.map(artwork => (
+          <ArtworkCard
+            key={artwork.id}
+            artwork={artwork}
+            onOpen={() => {
+              setPreviewBgColor('#f3f4f6')
+              setSelectedArtwork(artwork)
+            }}
+            onEdit={() => openEditModal(artwork)}
+            onFeature={() => openFeatureModal(artwork)}
+            onApprove={() => {}}
+            onReject={() => {}}
+            onUnpublish={() => handleUnpublish(artwork)}
+            showFeatureButton
+            showEditButton
+            showUnpublishButton
+          />
+        ))}
       </div>
     )
   }
 
   return (
     <>
-      {/* Action Error Banner */}
       {actionError && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600 font-secondary">{actionError}</p>
         </div>
       )}
 
-      <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-2xl font-heading text-afh-blue">Incoming Pending Drafts</h2>
-          <p className="mt-1 text-sm text-gray-600 font-secondary">
-            Review new submissions waiting for approval.
-          </p>
-        </div>
-        <div className="rounded-full border border-afh-orange/40 bg-afh-orange/10 px-4 py-2 text-sm font-secondary text-afh-orange">
-          {artworks.length} pending
-        </div>
+      <div className="mb-6 flex gap-2 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab('pending')}
+          className={`pb-3 px-1 text-sm font-secondary font-medium border-b-2 transition-colors ${activeTab === 'pending' ? 'border-afh-orange text-afh-orange' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Pending Queue
+          {' '}
+          <span className="ml-2 rounded-full bg-afh-orange/10 px-2 py-0.5 text-xs text-afh-orange">
+            {artworks.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('published')
+            fetchApproved()
+          }}
+          className={`pb-3 px-1 text-sm font-secondary font-medium border-b-2 transition-colors ${activeTab === 'published' ? 'border-afh-orange text-afh-orange' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Published Gallery
+          {approvedArtworks.length > 0 && (
+            <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {approvedArtworks.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      {artworks.length === 0 ? (
-        <div className="flex items-center justify-center py-10">
-          <p className="text-gray-600 font-secondary">No artwork in this view.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {artworks.map(artwork => (
-          <ArtworkCard
-            key={artwork.id}
-            artwork={artwork}
-            onOpen={() => setSelectedArtwork(artwork)}
-            onEdit={() => openEditModal(artwork)}
-            onApprove={() => handleApprove(artwork)}
-            onReject={() => openRejectModal(artwork)}
-            showFeatureButton={false}
-            showEditButton
-          />
-          ))}
-        </div>
-      )}
+      {activeTab === 'pending' && pendingContent}
 
-      {/* Artwork Details Modal */}
+      {activeTab === 'published' && publishedContent}
+
       {selectedArtwork && (
         <Modal onClose={() => setSelectedArtwork(null)}>
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl font-heading text-afh-blue">
-                  {selectedArtwork.title}
-                </h2>
+                <h2 className="text-xl font-heading text-afh-blue">{selectedArtwork.title}</h2>
                 <p className="mt-1 text-sm text-gray-600 font-secondary">
                   by {selectedArtwork.author?.profile?.display_name || selectedArtwork.author?.username || selectedArtwork.submitted_by_name || 'Guest'}
                 </p>
               </div>
+
               <button
                 type="button"
                 onClick={() => setSelectedArtwork(null)}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:text-gray-800 transition-colors duration-150 focus:outline-none"
                 aria-label="Close artwork details"
               >
-                ✕
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M10.5 1.5L1.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1.5 1.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
-            <div className="relative w-full h-64 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+            <div
+              className="relative w-full h-72 sm:h-80 rounded-lg overflow-hidden border border-gray-200"
+              style={{ backgroundColor: previewBgColor }}
+            >
               {renderArtworkPreview(selectedArtwork)}
             </div>
 
@@ -423,6 +568,11 @@ export function AdminDashboard() {
               <p>
                 <span className="font-medium text-gray-700">Status:</span>{' '}
                 {selectedArtwork.status}
+                {selectedArtwork.featured && (
+                  <span className="ml-2 rounded-full bg-afh-orange/10 px-2 py-0.5 text-xs text-afh-orange font-medium">
+                    Featured
+                  </span>
+                )}
               </p>
               {selectedArtwork.tools_used.length > 0 && (
                 <p>
@@ -430,10 +580,10 @@ export function AdminDashboard() {
                   {selectedArtwork.tools_used.join(', ')}
                 </p>
               )}
-              {selectedArtwork.submitted_by_email && (
+              {(selectedArtwork.submitted_by_email || selectedArtwork.author?.email) && (
                 <p>
                   <span className="font-medium text-gray-700">Email:</span>{' '}
-                  {selectedArtwork.submitted_by_email}
+                  {selectedArtwork.submitted_by_email || selectedArtwork.author?.email}
                 </p>
               )}
               <p>
@@ -450,6 +600,7 @@ export function AdminDashboard() {
               >
                 Edit
               </button>
+
               {selectedArtwork.status === 'PENDING' && (
                 <>
                   <button
@@ -468,20 +619,34 @@ export function AdminDashboard() {
                   </button>
                 </>
               )}
+
+              {selectedArtwork.status === 'APPROVED' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => openFeatureModal(selectedArtwork)}
+                    className="flex-1 min-w-[120px] bg-afh-orange text-white px-4 py-2 rounded-lg hover:bg-afh-orange/90 font-secondary text-sm font-medium transition-colors"
+                  >
+                    {selectedArtwork.featured ? 'Remove from Carousel' : 'Feature'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUnpublish(selectedArtwork)}
+                    className="flex-1 min-w-[120px] border border-gray-400 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 font-secondary text-sm font-medium transition-colors"
+                  >
+                    Move to Pending
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Reject Modal */}
       {rejectingArtwork && (
         <Modal onClose={() => setRejectingArtwork(null)}>
-          <h2 className="text-xl font-heading text-afh-blue mb-4">
-            Reject Artwork
-          </h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Please provide a reason for rejection:
-          </p>
+          <h2 className="text-xl font-heading text-afh-blue mb-4">Reject Artwork</h2>
+          <p className="text-sm text-gray-600 mb-4">Please provide a reason for rejection:</p>
           <textarea
             className="w-full border border-gray-300 rounded-lg p-3 font-secondary text-gray-900 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-afh-orange"
             placeholder="Reason for rejection..."
@@ -499,20 +664,26 @@ export function AdminDashboard() {
         </Modal>
       )}
 
-      {/* Feature Modal */}
       {featuringArtwork && (
         <Modal onClose={() => setFeaturingArtwork(null)}>
           <h2 className="text-xl font-heading text-afh-blue mb-4">
-            Feature Artwork?
+            {featuringArtwork.featured ? 'Remove from Carousel?' : 'Feature Artwork?'}
           </h2>
           <p className="text-gray-700 font-secondary mb-6">
-            This will mark <strong>{featuringArtwork.title}</strong> as a
-            featured artwork on the homepage.
+            {featuringArtwork.featured ? (
+              <>
+                This will remove <strong>{featuringArtwork.title}</strong> from the homepage carousel.
+              </>
+            ) : (
+              <>
+                This will mark <strong>{featuringArtwork.title}</strong> as a featured artwork on the homepage.
+              </>
+            )}
           </p>
           <ModalButtons
             onCancel={() => setFeaturingArtwork(null)}
             onConfirm={handleFeature}
-            confirmLabel="Feature"
+            confirmLabel={featuringArtwork.featured ? 'Remove Feature' : 'Feature'}
             confirmColor="bg-afh-orange hover:bg-opacity-90"
           />
         </Modal>
@@ -520,9 +691,7 @@ export function AdminDashboard() {
 
       {editingArtwork && (
         <Modal onClose={closeEditModal}>
-          <h2 className="text-xl font-heading text-afh-blue mb-4">
-            Edit Artwork
-          </h2>
+          <h2 className="text-xl font-heading text-afh-blue mb-4">Edit Artwork</h2>
 
           {editFormError && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
@@ -536,7 +705,7 @@ export function AdminDashboard() {
               <input
                 type="text"
                 value={editForm.title}
-                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
@@ -545,7 +714,7 @@ export function AdminDashboard() {
               <span>Description</span>
               <textarea
                 value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                 className="mt-1 w-full min-h-[96px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
@@ -555,16 +724,15 @@ export function AdminDashboard() {
               <div className="relative mt-1">
                 <button
                   type="button"
-                  onClick={() => setIsToolsDropdownOpen((prev) => !prev)}
+                  onClick={() => setIsToolsDropdownOpen(prev => !prev)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-gray-900 focus:!border-afh-orange focus:outline-none"
                 >
-                  {editForm.tools_used.length > 0
-                    ? editForm.tools_used.join(', ')
-                    : 'Select tools...'}
+                  {editForm.tools_used.length > 0 ? editForm.tools_used.join(', ') : 'Select tools...'}
                 </button>
+
                 {isToolsDropdownOpen && (
                   <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                    {TOOL_OPTIONS.map((tool) => {
+                    {TOOL_OPTIONS.map(tool => {
                       const checked = editForm.tools_used.includes(tool)
                       const disabled = !checked && editForm.tools_used.length >= 3
 
@@ -594,7 +762,7 @@ export function AdminDashboard() {
               <input
                 type="text"
                 value={editForm.project_type}
-                onChange={(e) => setEditForm({ ...editForm, project_type: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, project_type: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
@@ -604,7 +772,7 @@ export function AdminDashboard() {
               <input
                 type="text"
                 value={editForm.submitted_by_name}
-                onChange={(e) => setEditForm({ ...editForm, submitted_by_name: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, submitted_by_name: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
@@ -614,7 +782,7 @@ export function AdminDashboard() {
               <input
                 type="email"
                 value={editForm.submitted_by_email}
-                onChange={(e) => setEditForm({ ...editForm, submitted_by_email: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, submitted_by_email: e.target.value })}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:!border-afh-orange focus:outline-none"
               />
             </label>
@@ -633,7 +801,6 @@ export function AdminDashboard() {
   )
 }
 
-/* Reusable Modal Component */
 function Modal({
   children,
   onClose,
@@ -649,9 +816,7 @@ function Modal({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto"
-      >
+      <div className="relative bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
         {children}
       </div>
     </div>

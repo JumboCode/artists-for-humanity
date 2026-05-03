@@ -46,7 +46,7 @@ export default function RootLayout({
             <footer className="relative overflow-hidden border-t border-white/10 bg-gradient-to-b from-[#071826]/70 via-[#071826]/85 to-[#071826]/95 text-white backdrop-blur-sm">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_20%,rgba(245,130,31,0.28),transparent_50%),radial-gradient(circle_at_92%_5%,rgba(255,255,255,0.05),transparent_35%)]" />
               <div className="relative mx-auto max-w-[1440px] px-6 py-10 sm:px-8 lg:px-12 xl:px-16">
-                <div className="grid gap-12 md:gap-20 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:items-center">
+                <div className="grid gap-10 grid-cols-1 md:grid-cols-3 md:gap-6 lg:gap-16 md:items-start">
                   {/* Logo and Description */}
                   <div className="space-y-4 flex flex-col items-center">
                     <div className="w-32">

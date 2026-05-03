@@ -53,7 +53,7 @@ export const SignUpBody = () => {
       newErrors.username = true
       isValid = false
     }
-    if (!formData.password || formData.password.length < 8) {
+    if (!formData.password || formData.password.length < 12) {
       newErrors.password = true
       isValid = false
     }
@@ -185,7 +185,7 @@ export const SignUpBody = () => {
           label="Password"
           value={formData.password}
           name="password"
-          errorMessage="Password must be at least 8 characters"
+          errorMessage="Use 12+ chars with upper/lowercase, number, and symbol"
           onChange={handleChange}
           showError={errors.password}
           required
@@ -196,8 +196,6 @@ export const SignUpBody = () => {
           name="bio"
           onChange={handleChange}
           showError={false}
-          multiline
-          rows={3}
         />
       </div>
 

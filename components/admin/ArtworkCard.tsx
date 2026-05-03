@@ -13,11 +13,13 @@ type Artwork = {
   submitted_by_email: string | null
   created_at: string
   author: {
+    email: string
     username: string
     profile: {
       display_name: string | null
     } | null
   } | null
+  featured?: boolean
 }
 
 type Props = {
@@ -27,8 +29,10 @@ type Props = {
   onApprove: () => void
   onReject: () => void
   onFeature?: () => void
+  onUnpublish?: () => void
   showFeatureButton?: boolean
   showEditButton?: boolean
+  showUnpublishButton?: boolean
 }
 
 export default function ArtworkCard({
@@ -38,10 +42,13 @@ export default function ArtworkCard({
   onApprove,
   onReject,
   onFeature,
+  onUnpublish,
   showFeatureButton = false,
   showEditButton = false,
+  showUnpublishButton = false,
 }: Readonly<Props>) {
   const [imageError, setImageError] = useState(false)
+  const [previewBgColor, setPreviewBgColor] = useState('#f3f4f6')
   const previewUrl = artwork.thumbnail_url || artwork.image_url
   const isVideo = /\.(mp4|webm|mov|quicktime)(\?|$)/i.test(artwork.image_url)
   // Determine the artist name
@@ -51,6 +58,37 @@ export default function ArtworkCard({
     artwork.author?.username ||
     artwork.submitted_by_name ||
     'Guest'
+  const displayEmail = artwork.submitted_by_email || artwork.author?.email || null
+
+  const extractDominantColor = (image: HTMLImageElement) => {
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      canvas.width = 40
+      canvas.height = 40
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      let r = 0
+      let g = 0
+      let b = 0
+
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]
+        g += data[i + 1]
+        b += data[i + 2]
+      }
+
+      const pixelCount = data.length / 4
+      setPreviewBgColor(
+        `rgb(${Math.round(r / pixelCount)}, ${Math.round(g / pixelCount)}, ${Math.round(b / pixelCount)})`
+      )
+    } catch {
+      setPreviewBgColor('#f3f4f6')
+    }
+  }
 
   let previewContent: React.ReactNode
   if (imageError) {
@@ -69,7 +107,7 @@ export default function ArtworkCard({
       <video
         src={artwork.image_url}
         poster={previewUrl || undefined}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         muted
         playsInline
         preload="metadata"
@@ -83,8 +121,9 @@ export default function ArtworkCard({
         src={previewUrl}
         alt={artwork.title}
         fill
-        className="object-cover"
+        className="object-contain"
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        onLoad={(event) => extractDominantColor(event.currentTarget)}
         onError={() => setImageError(true)}
       />
     )
@@ -96,10 +135,16 @@ export default function ArtworkCard({
       <button
         type="button"
         onClick={onOpen}
-        className="relative w-full h-64 overflow-hidden bg-gray-100 text-left"
+        className="relative w-full h-64 overflow-hidden text-left"
+        style={{ backgroundColor: previewBgColor }}
         aria-label={`Open details for ${artwork.title}`}
       >
         {previewContent}
+        {artwork.featured && (
+          <div className="absolute top-2 left-2 z-20 rounded-full bg-afh-orange px-2 py-0.5 text-xs font-secondary font-medium text-white shadow">
+            Featured
+          </div>
+        )}
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/35" />
         <div className="absolute inset-x-0 bottom-0 translate-y-3 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-4 text-white">
           <p className="text-xs uppercase tracking-[0.15em] text-white/80 font-secondary">
@@ -140,10 +185,10 @@ export default function ArtworkCard({
             <span className="font-medium">Type:</span>{' '}
             {artwork.project_type || 'none'}
           </p>
-          {isGuestUpload && artwork.submitted_by_email && (
+          {displayEmail && (
             <p>
               <span className="font-medium">Email:</span>{' '}
-              {artwork.submitted_by_email}
+              {displayEmail}
             </p>
           )}
           <p>
@@ -154,36 +199,48 @@ export default function ArtworkCard({
 
         {/* Action Buttons */}
         <div className="mt-auto pt-4">
-          <div className="flex flex-wrap justify-center gap-2 sm:grid sm:grid-cols-3">
+          <div className={`grid gap-2 ${showUnpublishButton ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {showEditButton && onEdit && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   onEdit()
                 }}
-                className="w-[160px] sm:w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
+                className="w-full border border-afh-orange text-afh-orange px-3 py-2 rounded-lg hover:bg-afh-orange hover:text-white font-secondary text-sm font-medium transition-colors"
               >
                 Edit
               </button>
             )}
-            <button
-              onClick={onApprove}
-              className="w-[160px] sm:w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
-            >
-              Approve
-            </button>
-            <button
-              onClick={onReject}
-              className="w-[160px] sm:w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
-            >
-              Reject
-            </button>
+            {!showUnpublishButton && (
+              <>
+                <button
+                  onClick={onApprove}
+                  className="w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-secondary text-sm font-medium transition-colors"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={onReject}
+                  className="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 font-secondary text-sm font-medium transition-colors"
+                >
+                  Reject
+                </button>
+              </>
+            )}
             {showFeatureButton && onFeature && (
               <button
                 onClick={onFeature}
-                className="w-[160px] sm:w-full bg-afh-orange text-white px-3 py-2 rounded-lg hover:bg-opacity-90 font-secondary text-sm font-medium transition-colors"
+                className={`w-full bg-afh-orange text-white px-3 py-2 rounded-lg hover:bg-opacity-90 font-secondary text-sm font-medium transition-colors ${showUnpublishButton ? 'col-span-1' : ''}`}
               >
-                Feature
+                {artwork.featured ? 'Unfeature' : 'Feature'}
+              </button>
+            )}
+            {showUnpublishButton && onUnpublish && (
+              <button
+                onClick={onUnpublish}
+                className="w-full col-span-2 border border-gray-400 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-100 font-secondary text-sm font-medium transition-colors"
+              >
+                Move to Pending
               </button>
             )}
           </div>

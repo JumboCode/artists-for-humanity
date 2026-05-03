@@ -19,7 +19,11 @@ export const FormField = ({
       errorMessage={showError ? errorMessage : undefined}
     >
       <Input
+        inputProps={{ style: { outline: 'none' } }}
         sx={{
+          '& .MuiInputBase-input': {
+            outline: 'none',
+          },
           '&:before': {
             borderBottomColor: showError ? '#f97316' : 'rgba(0, 0, 0, 0.42)',
             borderBottomWidth: showError ? '2px' : '1px',
@@ -29,7 +33,7 @@ export const FormField = ({
             borderBottomWidth: showError ? '2px' : '1px',
           },
           '&:after': {
-            borderBottomColor: showError ? '#f97316' : '#1976d2',
+            borderBottomColor: '#f97316',
             borderBottomWidth: '2px',
           },
         }}

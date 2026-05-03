@@ -6,7 +6,16 @@ import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import Link from 'next/link'
 
-export const PasswordTextField = (props: FormFieldProps) => {
+type PasswordTextFieldProps = FormFieldProps & {
+  showForgotPasswordLink?: boolean
+  forgotPasswordHref?: string
+}
+
+export const PasswordTextField = ({
+  showForgotPasswordLink = false,
+  forgotPasswordHref = '/forgot-password',
+  ...props
+}: PasswordTextFieldProps) => {
   const [showPassword, setShowPassword] = useState(false)
 
   const handleClickShowPassword = () => setShowPassword(show => !show)
@@ -24,16 +33,16 @@ export const PasswordTextField = (props: FormFieldProps) => {
           </InputAdornment>
         }
       />
-      <ForgotPassword />
+      {showForgotPasswordLink ? <ForgotPassword href={forgotPasswordHref} /> : null}
     </div>
   )
 }
 
-export const ForgotPassword = () => {
+export const ForgotPassword = ({ href }: Readonly<{ href: string }>) => {
   return (
     <Link
       className="underline text-gray-600 font-secondary font-light hover:text-afh-orange transition-colors"
-      href={'/'}
+      href={href}
     >
       Forgot your password?
     </Link>

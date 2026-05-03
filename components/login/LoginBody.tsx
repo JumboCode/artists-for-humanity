@@ -107,6 +107,7 @@ export const LoginBody = () => {
           errorMessage="Please enter your password"
           onChange={handleChange}
           showError={errors.password}
+          showForgotPasswordLink
           required
         />
       </div>
@@ -135,16 +136,5 @@ const SignUpSection = () => {
       </Link>
       .
     </p>
-  )
-}
-
-const ForgotPassword = () => {
-  return (
-    <Link
-      className="underline text-gray-600 font-secondary font-light hover:text-afh-orange transition-colors"
-      href={'/sign-up'}
-    >
-      Forgot your password?
-    </Link>
   )
 }

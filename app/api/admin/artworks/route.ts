@@ -3,15 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/admin/queue
- * Returns pending artworks for admin moderation
+ * GET /api/admin/artworks
+ * Returns all APPROVED artworks for admin review/management
  */
 export async function GET() {
-  // Check if user is authenticated and is an admin
   const session = await getServerSession(authOptions)
 
   if (session?.user?.role !== 'ADMIN') {
@@ -22,11 +20,8 @@ export async function GET() {
   }
 
   try {
-    // Fetch pending artworks with author details
     const artworks = await prisma.artwork.findMany({
-      where: {
-        status: 'PENDING',
-      },
+      where: { status: 'APPROVED' },
       select: {
         id: true,
         title: true,
@@ -36,6 +31,7 @@ export async function GET() {
         status: true,
         project_type: true,
         tools_used: true,
+        featured: true,
         submitted_by_name: true,
         submitted_by_email: true,
         created_at: true,
@@ -44,26 +40,19 @@ export async function GET() {
             email: true,
             username: true,
             profile: {
-              select: {
-                display_name: true,
-              },
+              select: { display_name: true },
             },
           },
         },
       },
-      orderBy: {
-        created_at: 'desc',
-      },
+      orderBy: { created_at: 'desc' },
     })
 
-    return NextResponse.json({
-      count: artworks.length,
-      artworks,
-    })
-  } catch (error: any) {
-    console.error('Error fetching admin queue:', error)
+    return NextResponse.json({ count: artworks.length, artworks })
+  } catch (error: unknown) {
+    console.error('Error fetching approved artworks:', error)
     return NextResponse.json(
-      { message: error.message || 'Failed to fetch queue' },
+      { message: error instanceof Error ? error.message : 'Failed to fetch artworks' },
       { status: 500 }
     )
   }

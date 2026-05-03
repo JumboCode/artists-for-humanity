@@ -14,7 +14,6 @@ generator client {
 // Used in the User model
 enum Role {
   STUDENT
-  MENTOR
   ADMIN
 }
 
@@ -50,6 +49,21 @@ model User {
   artworks          Artwork[]      @relation("ArtworkAuthor") // Artworks this user created
   approved_artworks Artwork[]      @relation("ArtworkApprover") // Artworks this user approved
   admin_actions     AdminAction[]  @relation("AdminActor") // Actions this admin has taken
+  password_reset_tokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  user_id    String
+  token_hash String   @unique @db.VarChar(128)
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], name: "idx_password_reset_tokens_user_id")
+  @@index([expires_at], name: "idx_password_reset_tokens_expires_at")
 }
 
 model Profile {

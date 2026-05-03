@@ -12,6 +12,11 @@ interface UnclaimedArtwork {
   created_at: string
 }
 
+type ClaimNotice = {
+  type: 'success' | 'error'
+  message: string
+}
+
 export default function ClaimArtworkModal() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -19,6 +24,7 @@ export default function ClaimArtworkModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
+  const [claimNotice, setClaimNotice] = useState<ClaimNotice | null>(null)
 
   useEffect(() => {
     // Only check once per session when user first logs in
@@ -27,6 +33,15 @@ export default function ClaimArtworkModal() {
       setHasChecked(true)
     }
   }, [session, hasChecked])
+
+  useEffect(() => {
+    if (!claimNotice) return
+    const timeoutId = window.setTimeout(() => {
+      setClaimNotice(null)
+    }, 4500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [claimNotice])
 
   const checkForUnclaimedArtwork = async () => {
     try {
@@ -54,8 +69,11 @@ export default function ClaimArtworkModal() {
         const data = await response.json()
         // Success! Close modal
         setIsOpen(false)
-        // Show success message
-        alert(`Successfully claimed ${data.count} artwork(s)! You can now view them in your portfolio.`)
+        // Show success message in-app instead of browser alert
+        setClaimNotice({
+          type: 'success',
+          message: `Successfully claimed ${data.count} artwork(s)! You can now view them in your portfolio.`,
+        })
         // Refresh the page to show updated artwork
         router.refresh()
       } else {
@@ -63,21 +81,65 @@ export default function ClaimArtworkModal() {
       }
     } catch (error) {
       console.error('Error claiming artwork:', error)
-      alert('Failed to claim artwork. Please try again or contact support.')
+      setClaimNotice({
+        type: 'error',
+        message: 'Failed to claim artwork. Please try again or contact support.',
+      })
     } finally {
       setIsClaiming(false)
     }
   }
 
-  if (!isOpen || unclaimedArtwork.length === 0) return null
+  const noticeElement = claimNotice ? (
+    <div className="fixed top-4 right-4 z-[70] max-w-sm rounded-lg border bg-white px-4 py-3 shadow-lg animate-fade-in">
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
+            claimNotice.type === 'success'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {claimNotice.type === 'success' ? '✓' : '!'}
+        </span>
+        <div className="flex-1">
+          <p
+            className={`text-sm font-medium ${
+              claimNotice.type === 'success' ? 'text-emerald-700' : 'text-red-700'
+            }`}
+          >
+            {claimNotice.type === 'success' ? 'Artwork Claimed' : 'Claim Failed'}
+          </p>
+          <p className="mt-1 text-sm text-gray-700">{claimNotice.message}</p>
+        </div>
+        <button
+          onClick={() => setClaimNotice(null)}
+          aria-label="Dismiss notification"
+          className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        >
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M15 5L5 15M5 5l10 10"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  ) : null
+
+  if (!isOpen || unclaimedArtwork.length === 0) {
+    return <>{noticeElement}</>
+  }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative bg-white rounded-xl p-8 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-y-auto">
+    <>
+      {noticeElement}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
+        <div className="relative bg-white rounded-xl p-8 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={() => setIsOpen(false)}
@@ -146,7 +208,8 @@ export default function ClaimArtworkModal() {
         <p className="text-xs text-gray-500 mt-4 text-center">
           This will link the artwork to your account. You can manage it from your portfolio after claiming.
         </p>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

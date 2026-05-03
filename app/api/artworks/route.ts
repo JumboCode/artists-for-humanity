@@ -29,10 +29,14 @@ async function uploadFileToCloudinary(
       ],
     })
 
-    // Generate thumbnail URL
+    // Generate thumbnail URL (image for images, first-frame jpg for videos)
+    const isVideo = uploadResult.resource_type === 'video'
     const thumbnailUrl = cloudinary.url(uploadResult.public_id, {
+      secure: true,
+      resource_type: isVideo ? 'video' : 'image',
+      format: isVideo ? 'jpg' : undefined,
       transformation: [
-        { width: 400, height: 400, crop: 'fill', quality: 'auto' },
+        { width: 400, height: 400, crop: 'fill', quality: 'auto', ...(isVideo ? { start_offset: '0' } : {}) },
       ],
     })
 
@@ -72,6 +76,7 @@ export async function GET() {
         created_at: true,
         view_count: true,
         featured: true,
+        user_id: true,
         author: {
           select: {
             username: true,

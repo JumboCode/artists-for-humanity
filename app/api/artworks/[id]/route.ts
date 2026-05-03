@@ -32,6 +32,7 @@ export async function GET(
         view_count: true,
         featured: true,
         status: true,
+        user_id: true,
         author: {
           select: {
             username: true,
@@ -81,6 +82,7 @@ export async function GET(
         view_count: true,
         featured: true,
         status: true,
+        user_id: true,
         author: {
           select: {
             username: true,
@@ -179,7 +181,7 @@ export async function PATCH(
 
       return NextResponse.json(
         {
-          message: 'Artwork moved to drafts and removed from gallery',
+          message: 'Artwork moved to \'Pending\' and removed from gallery',
           artwork: movedToDraft,
         },
         { status: 200 }
@@ -216,6 +218,47 @@ export async function PATCH(
       )
     }
 
+    if (data.action === 'publishToGallery') {
+      if (session.user.role !== 'ADMIN') {
+        return NextResponse.json(
+          { error: 'Only admins can publish artwork to gallery' },
+          { status: 403 }
+        )
+      }
+
+      if (artwork.status === 'APPROVED') {
+        return NextResponse.json(
+          { error: 'Artwork is already published' },
+          { status: 400 }
+        )
+      }
+
+      const publishedArtwork = await prisma.artwork.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          approved_at: new Date(),
+          approved_by_id: null,
+          rejection_reason: null,
+          updated_at: new Date(),
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          message: 'Artwork published to gallery',
+          artwork: publishedArtwork,
+        },
+        { status: 200 }
+      )
+    }
+
+    const shouldMoveToPendingForReview = artwork.status === 'APPROVED'
+
     // Update artwork
     const updatedArtwork = await prisma.artwork.update({
       where: { id },
@@ -224,6 +267,15 @@ export async function PATCH(
         description: data.description || undefined,
         tools_used: data.tools_used || undefined,
         project_type: data.project_type || undefined,
+        ...(shouldMoveToPendingForReview
+          ? {
+              status: 'PENDING',
+              featured: false,
+              approved_at: null,
+              approved_by_id: null,
+              rejection_reason: null,
+            }
+          : {}),
         updated_at: new Date(),
       },
       select: {
@@ -236,7 +288,13 @@ export async function PATCH(
       },
     })
 
-    return NextResponse.json(updatedArtwork, { status: 200 })
+    return NextResponse.json(
+      {
+        ...updatedArtwork,
+        moved_to_pending: shouldMoveToPendingForReview,
+      },
+      { status: 200 }
+    )
   } catch (error) {
     console.error('Error updating artwork:', error)
     return NextResponse.json(
