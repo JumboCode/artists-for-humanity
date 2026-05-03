@@ -1,11 +1,11 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PasswordTextField } from '@/components/common/PasswordFormField'
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = useMemo(() => searchParams.get('token') || '', [searchParams])
@@ -116,5 +116,21 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen w-full flex justify-center items-start px-4 sm:px-6 md:px-8 py-16 sm:py-20">
+          <div className="w-full max-w-2xl mx-auto">
+            <p className="text-center text-gray-600 font-light">Loading reset form...</p>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
