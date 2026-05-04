@@ -34,6 +34,11 @@
     @apply border-gray-200;
   }
 
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground font-primary;
     font-feature-settings:
