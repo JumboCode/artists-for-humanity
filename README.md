@@ -52,8 +52,3 @@ npm run db:generate
 npm run db:push
 npm run db:studio
 ```
-
-## Notes
-
-- Keep credentials and environment variables out of public docs.
-- See `notes/HANDOFF.md` for operational handoff details.
