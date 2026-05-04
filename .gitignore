@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Docs
-docs/
-
 # Next.js
 .next/
 out/
@@ -50,3 +47,4 @@ notes/
 NOTES/
 app/**/notes/
 app/**/NOTES/
+docs/
