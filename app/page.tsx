@@ -1523,7 +1523,7 @@ export default function HomePage() {
             href="/upload"
             className="afh-pill-control afh-pill-control-accent mx-auto mt-8 sm:mt-10 min-w-[170px] gap-2 px-6 text-base"
           >
-            Upload Your Work
+            Upload Your Work Here
           </Link>
         </section>
       </div>
