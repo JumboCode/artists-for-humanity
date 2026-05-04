@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Docs
+docs/
+
 # Next.js
 .next/
 out/
